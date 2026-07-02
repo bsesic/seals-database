@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Home" %}{% endblock %}
+{% block meta_description %}{% trans "A templates-first Django SaaS boilerplate to launch products fast." %}{% endblock %}
+{% block og_description %}{% trans "A templates-first Django SaaS boilerplate to launch products fast." %}{% endblock %}
+
+{% block content %}
+  <div class="py-5 text-center">
+    <h1 class="display-5">SaaS Boilerplate</h1>
+    <p class="lead text-muted">
+      {% trans "A templates-first Django starting point. Replace this landing page with your product story." %}
+    </p>
+    {% if not user.is_authenticated %}
+      <a class="btn btn-primary btn-lg mt-3" href="{% url 'account_signup' %}">{% trans "Get started" %}</a>
+    {% else %}
+      <a class="btn btn-primary btn-lg mt-3" href="{% url 'profile' %}">{% trans "Go to your profile" %}</a>
+    {% endif %}
+  </div>
+{% endblock %}
