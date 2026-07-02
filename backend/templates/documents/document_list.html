@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Documents" %}{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">{% trans "Documents" %}</h1>
+    <a class="btn btn-sm btn-primary" href="{% url 'documents:create' %}">{% trans "Upload" %}</a>
+  </div>
+
+  <form method="get" class="mb-3">
+    <div class="input-group">
+      <input type="search" name="q" value="{{ query }}" class="form-control"
+             placeholder="{% trans 'Search documents…' %}">
+      <button class="btn btn-outline-secondary" type="submit">{% trans "Search" %}</button>
+    </div>
+  </form>
+
+  <ul class="list-group mb-3">
+    {% for document in documents %}
+      <li class="list-group-item d-flex justify-content-between align-items-start">
+        <div>
+          <a href="{{ document.get_absolute_url }}">{{ document.title }}</a>
+          <div class="small text-muted">
+            {% for tag in document.tags.all %}<span class="badge bg-light text-dark">{{ tag.name }}</span>{% endfor %}
+          </div>
+        </div>
+        <span class="text-muted small">{{ document.created_at|date }}</span>
+      </li>
+    {% empty %}
+      <li class="list-group-item text-muted">{% trans "No documents yet." %}</li>
+    {% endfor %}
+  </ul>
+
+  {% include "partials/pagination.html" %}
+{% endblock %}
