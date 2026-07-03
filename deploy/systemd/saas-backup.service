@@ -1,0 +1,15 @@
+[Unit]
+Description=SaaS Boilerplate - DB + media + .env backup
+After=postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=oneshot
+User=saas
+Group=saas
+ExecStart=/usr/local/bin/saas-backup.sh
+Nice=15
+IOSchedulingClass=idle
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=saas-backup

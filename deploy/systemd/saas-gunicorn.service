@@ -1,0 +1,35 @@
+[Unit]
+Description=SaaS Boilerplate - Gunicorn WSGI server
+After=network.target postgresql.service redis.service
+Wants=redis.service
+
+[Service]
+Type=simple
+User=saas
+Group=saas
+WorkingDirectory=/opt/saas-boilerplate/backend
+EnvironmentFile=/opt/saas-boilerplate/backend/.env
+
+ExecStart=/opt/saas-boilerplate/venv/bin/gunicorn \
+    --bind 127.0.0.1:8000 \
+    --workers 3 \
+    --graceful-timeout 30 \
+    --timeout 60 \
+    --access-logfile /var/log/saas/access.log \
+    --error-logfile /var/log/saas/error.log \
+    core.wsgi:application
+
+Restart=on-failure
+RestartSec=3
+KillSignal=SIGTERM
+TimeoutStopSec=30
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/saas-boilerplate/backend /var/log/saas
+
+[Install]
+WantedBy=multi-user.target

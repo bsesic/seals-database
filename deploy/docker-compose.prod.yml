@@ -1,0 +1,75 @@
+# Self-contained production stack (alternative to the systemd + host-NGINX setup).
+# Build from the repo root:
+#   docker compose -f deploy/docker-compose.prod.yml --env-file backend/.env up -d --build
+#
+# Web runs gunicorn behind an NGINX container that terminates TLS and serves
+# static/media from a shared volume.
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-saas}
+      POSTGRES_USER: ${DB_USER:-saas}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-saas}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-saas} -d ${DB_NAME:-saas}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+  web:
+    # CI/CD pulls the prebuilt image (SAAS_IMAGE set by the deploy workflow).
+    # Locally it falls back to building from ../backend.
+    image: ${SAAS_IMAGE:-ghcr.io/bsesic/saas-boilerplate-backend:latest}
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: >-
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py collectstatic --noinput --clear &&
+             gunicorn --bind 0.0.0.0:8000 --workers 3
+                      --graceful-timeout 30 --timeout 60
+                      --access-logfile - core.wsgi:application"
+    env_file:
+      - ../backend/.env
+    environment:
+      DJANGO_DEBUG: "False"
+      DB_HOST: db
+      DB_PORT: "5432"
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - static_data:/app/staticfiles
+      - media_data:/app/media
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/saas-boilerplate.docker.conf:/etc/nginx/conf.d/default.conf:ro
+      - static_data:/var/www/static:ro
+      - media_data:/var/www/media:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      - web
+
+volumes:
+  postgres_data:
+  static_data:
+  media_data:
