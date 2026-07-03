@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Activity" %}{% endblock %}
+
+{% block content %}
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <h1 class="h3 mb-3">{% trans "Your activity" %}</h1>
+      <ul class="list-group">
+        {% for action in actions %}
+          <li class="list-group-item d-flex justify-content-between">
+            <span>{{ action }}</span>
+            <span class="text-muted small">{{ action.timestamp|date:"SHORT_DATETIME_FORMAT" }}</span>
+          </li>
+        {% empty %}
+          <li class="list-group-item text-muted">{% trans "No activity yet." %}</li>
+        {% endfor %}
+      </ul>
+      {% include "partials/pagination.html" %}
+    </div>
+  </div>
+{% endblock %}
