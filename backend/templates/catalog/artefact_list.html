@@ -20,93 +20,93 @@
     </div>
   {% endif %}
 
-  <form method="get" class="row g-2 align-items-end mb-4">
-    <div class="col-12 col-md">
-      <label class="form-label small text-muted mb-1">{% trans "Search" %}</label>
-      <input type="search" name="q" value="{{ query }}" class="form-control"
-             placeholder="{% trans 'Title, inscription, ruler, inventory no.…' %}">
-    </div>
-    <div class="col-6 col-md-3">
-      <label class="form-label small text-muted mb-1">{% trans "Type" %}</label>
-      <select name="category" class="form-select">
-        <option value="">{% trans "All types" %}</option>
-        {% for value, label in categories %}
-          <option value="{{ value }}" {% if value == selected_category %}selected{% endif %}>{{ label }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="col-6 col-md-3">
-      <label class="form-label small text-muted mb-1">{% trans "Region" %}</label>
-      <select name="region" class="form-select">
-        <option value="">{% trans "All regions" %}</option>
-        {% for region in regions %}
-          <option value="{{ region.pk }}" {% if selected_region == region.pk|stringformat:'s' %}selected{% endif %}>{{ region.label }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="col-auto">
-      <div class="form-check">
-        <input class="form-check-input" type="checkbox" name="inscribed" value="1"
-               id="inscribed" {% if inscribed_only %}checked{% endif %}>
-        <label class="form-check-label small" for="inscribed">{% trans "Inscribed only" %}</label>
-      </div>
-    </div>
-    <div class="col-auto">
-      <button class="btn btn-primary" type="submit">{% trans "Filter" %}</button>
-      <a class="btn btn-link" href="{% url 'catalog:artefact-list' %}">{% trans "Reset" %}</a>
-    </div>
-  </form>
+  <div class="row g-4">
+    {# ---- Facet sidebar ---- #}
+    <div class="col-lg-3">
+      <form method="get">
+        {# Preserve an active find-spot filter (driven from the map) across facet changes. #}
+        {% for fs in active.findspot %}<input type="hidden" name="findspot" value="{{ fs }}">{% endfor %}
 
-  <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 g-3">
-    {% for artefact in artefacts %}
-      <div class="col">
-        <div class="card h-100">
-          <a href="{{ artefact.get_absolute_url }}" class="ratio ratio-4x3 bg-body-secondary d-block overflow-hidden rounded-top">
-            {% with img=artefact.primary_image %}
-              {% if img and img.file %}
-                <img src="{{ img.file.url }}" alt="{{ artefact.title }}" class="object-fit-cover w-100 h-100">
-              {% elif img and img.image_url %}
-                <img src="{{ img.image_url }}" alt="{{ artefact.title }}" class="object-fit-cover w-100 h-100">
-              {% else %}
-                <span class="d-flex align-items-center justify-content-center text-muted small">{% trans "No image" %}</span>
-              {% endif %}
-            {% endwith %}
-          </a>
-          <div class="card-body">
-            <h2 class="h6 card-title mb-1">
-              <a href="{{ artefact.get_absolute_url }}" class="stretched-link text-decoration-none">{{ artefact.title }}</a>
-            </h2>
-            <p class="card-text small text-muted mb-2">
-              {{ artefact.get_category_display }}{% if artefact.region %} · {{ artefact.region.label }}{% endif %}
-              {% if artefact.period %}<br>{{ artefact.period.label }}{% elif artefact.dating_text %}<br>{{ artefact.dating_text }}{% endif %}
-            </p>
-            <div>
-              {% if artefact.is_inscribed %}<span class="badge text-bg-secondary">{% trans "Inscribed" %}</span>{% endif %}
-              {% if artefact.has_iconography %}<span class="badge text-bg-light text-dark">{% trans "Iconography" %}</span>{% endif %}
+        <div class="input-group mb-3">
+          <input type="search" name="q" value="{{ query }}" class="form-control form-control-sm"
+                 placeholder="{% trans 'Search…' %}">
+          <button class="btn btn-sm btn-primary" type="submit">{% trans "Go" %}</button>
+        </div>
+
+        <div class="form-check mb-3">
+          <input class="form-check-input" type="checkbox" name="inscribed" value="1"
+                 id="f-inscribed" onchange="this.form.submit()" {% if inscribed_only %}checked{% endif %}>
+          <label class="form-check-label small" for="f-inscribed">{% trans "Inscribed only" %}</label>
+        </div>
+
+        {% include "catalog/_facet_group.html" with title=_("Type") name="category" options=facets.category %}
+        {% include "catalog/_facet_group.html" with title=_("Region") name="region" options=facets.region %}
+        {% include "catalog/_facet_group.html" with title=_("Material") name="material" options=facets.material %}
+        {% include "catalog/_facet_group.html" with title=_("Script") name="script" options=facets.script %}
+
+        <div class="d-grid gap-2 mt-3">
+          <button class="btn btn-sm btn-primary" type="submit">{% trans "Apply filters" %}</button>
+          {% if has_filters %}
+            <a class="btn btn-sm btn-link" href="{% url 'catalog:artefact-list' %}">{% trans "Reset all" %}</a>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+
+    {# ---- Results ---- #}
+    <div class="col-lg-9">
+      <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
+        {% for artefact in artefacts %}
+          <div class="col">
+            <div class="card h-100">
+              <a href="{{ artefact.get_absolute_url }}" class="ratio ratio-4x3 bg-body-secondary d-block overflow-hidden rounded-top">
+                {% with img=artefact.primary_image %}
+                  {% if img and img.file %}
+                    <img src="{{ img.file.url }}" alt="{{ artefact.title }}" class="object-fit-cover w-100 h-100">
+                  {% elif img and img.image_url %}
+                    <img src="{{ img.image_url }}" alt="{{ artefact.title }}" class="object-fit-cover w-100 h-100">
+                  {% else %}
+                    <span class="d-flex align-items-center justify-content-center text-muted small">{% trans "No image" %}</span>
+                  {% endif %}
+                {% endwith %}
+              </a>
+              <div class="card-body">
+                <h2 class="h6 card-title mb-1">
+                  <a href="{{ artefact.get_absolute_url }}" class="stretched-link text-decoration-none">{{ artefact.title }}</a>
+                </h2>
+                <p class="card-text small text-muted mb-2">
+                  {{ artefact.get_category_display }}{% if artefact.region %} · {{ artefact.region.label }}{% endif %}
+                  {% if artefact.period %}<br>{{ artefact.period.label }}{% elif artefact.dating_text %}<br>{{ artefact.dating_text }}{% endif %}
+                </p>
+                <div>
+                  {% if artefact.is_inscribed %}<span class="badge text-bg-secondary">{% trans "Inscribed" %}</span>{% endif %}
+                  {% if artefact.has_iconography %}<span class="badge text-bg-light text-dark">{% trans "Iconography" %}</span>{% endif %}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
-    {% empty %}
-      <div class="col-12"><p class="text-muted">{% trans "No objects match your filters yet." %}</p></div>
-    {% endfor %}
-  </div>
-
-  {% if page_obj.paginator.num_pages > 1 %}
-    <nav aria-label="{% trans 'Pagination' %}" class="mt-4">
-      <ul class="pagination justify-content-center">
-        <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
-          <a class="page-link" href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page_obj.previous_page_number }}">{% trans "Previous" %}</a>
-        </li>
-        {% for num in page_obj.paginator.page_range %}
-          <li class="page-item {% if num == page_obj.number %}active{% endif %}">
-            <a class="page-link" href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ num }}">{{ num }}</a>
-          </li>
+        {% empty %}
+          <div class="col-12"><p class="text-muted">{% trans "No objects match your filters." %}</p></div>
         {% endfor %}
-        <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
-          <a class="page-link" href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page_obj.next_page_number }}">{% trans "Next" %}</a>
-        </li>
-      </ul>
-    </nav>
-  {% endif %}
+      </div>
+
+      {% if page_obj.paginator.num_pages > 1 %}
+        <nav aria-label="{% trans 'Pagination' %}" class="mt-4">
+          <ul class="pagination justify-content-center">
+            <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
+              <a class="page-link" href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page_obj.previous_page_number }}">{% trans "Previous" %}</a>
+            </li>
+            {% for num in page_obj.paginator.page_range %}
+              <li class="page-item {% if num == page_obj.number %}active{% endif %}">
+                <a class="page-link" href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ num }}">{{ num }}</a>
+              </li>
+            {% endfor %}
+            <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
+              <a class="page-link" href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page_obj.next_page_number }}">{% trans "Next" %}</a>
+            </li>
+          </ul>
+        </nav>
+      {% endif %}
+    </div>
+  </div>
 {% endblock %}
