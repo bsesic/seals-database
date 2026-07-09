@@ -9,7 +9,8 @@ from django.db.models import Count, Q
 from django.urls import reverse
 from django.views.generic import DetailView, ListView, TemplateView
 
-from catalog.models import Artefact, Findspot, ObjectCategory, Region
+from catalog.models import Artefact, Findspot, ObjectCategory
+from catalog.search import search_artefacts
 
 
 class ArtefactListView(ListView):
@@ -18,46 +19,106 @@ class ArtefactListView(ListView):
     context_object_name = "artefacts"
     paginate_by = 24
 
+    # Multi-select facets. Each maps a query param to the ORM lookup it filters.
+    FACETS = {
+        "category": "category__in",
+        "region": "region_id__in",
+        "material": "materials__in",
+        "script": "inscriptions__script_id__in",
+        "findspot": "findspot_id__in",
+    }
+
+    def _active(self):
+        """Selected values per facet (+ the ``inscribed`` boolean)."""
+        params = self.request.GET
+        active = {name: params.getlist(name) for name in self.FACETS}
+        active["inscribed"] = params.get("inscribed") == "1"
+        return active
+
+    def _apply_facets(self, qs, active, exclude=None):
+        for name, lookup in self.FACETS.items():
+            if name != exclude and active.get(name):
+                qs = qs.filter(**{lookup: active[name]})
+        if exclude != "inscribed" and active.get("inscribed"):
+            qs = qs.filter(is_inscribed=True)
+        return qs.distinct()
+
+    def _searched(self):
+        """Published artefacts narrowed by the text query (no facets yet)."""
+        qs = Artefact.objects.filter(is_published=True)
+        return search_artefacts(qs, self.request.GET.get("q", ""))
+
     def get_queryset(self):
         qs = (
-            Artefact.objects.filter(is_published=True)
+            self._apply_facets(self._searched(), self._active())
             .select_related("object_type", "region", "period", "findspot", "repository")
             .prefetch_related("media", "tags")
         )
-        query = self.request.GET.get("q", "").strip()
-        if query:
-            qs = qs.filter(
-                Q(title__icontains=query)
-                | Q(description__icontains=query)
-                | Q(notes__icontains=query)
-                | Q(ruler__icontains=query)
-                | Q(identifiers__value__icontains=query)
-            ).distinct()
-        category = self.request.GET.get("category", "")
-        if category:
-            qs = qs.filter(category=category)
-        region = self.request.GET.get("region", "")
-        if region.isdigit():
-            qs = qs.filter(region_id=int(region))
-        findspot = self.request.GET.get("findspot", "")
-        if findspot.isdigit():
-            qs = qs.filter(findspot_id=int(findspot))
-        if self.request.GET.get("inscribed") == "1":
-            qs = qs.filter(is_inscribed=True)
-        return qs
+        # Rank-order when a text query annotated `rank`; else newest first.
+        if "q" in self.request.GET and self.request.GET.get("q", "").strip():
+            try:
+                return qs.order_by("-rank", "-updated_at")
+            except Exception:
+                pass
+        return qs.order_by("-updated_at")
+
+    def _facet_options(self, active):
+        """For each facet, count matches over the results filtered by every
+        *other* active facet (so selecting one value still shows siblings)."""
+        searched = self._searched()
+
+        def counts(qs, value_field, label_field=None):
+            fields = [value_field] + ([label_field] if label_field else [])
+            # order_by() clears the model's default ordering, which would
+            # otherwise leak into GROUP BY and fragment the counts.
+            rows = qs.order_by().values(*fields).annotate(n=Count("pk", distinct=True))
+            return {r[value_field]: (r.get(label_field), r["n"]) for r in rows}
+
+        options = {}
+
+        cat = counts(self._apply_facets(searched, active, exclude="category"), "category")
+        options["category"] = [
+            {"value": v, "label": label, "count": cat.get(v, (None, 0))[1],
+             "selected": v in active["category"]}
+            for v, label in ObjectCategory.choices
+            if cat.get(v, (None, 0))[1] or v in active["category"]
+        ]
+
+        reg = counts(self._apply_facets(searched, active, exclude="region"),
+                     "region_id", "region__label")
+        options["region"] = [
+            {"value": str(pk), "label": lbl, "count": n, "selected": str(pk) in active["region"]}
+            for pk, (lbl, n) in sorted(reg.items(), key=lambda x: (x[1][0] or "")) if pk
+        ]
+
+        mat = counts(self._apply_facets(searched, active, exclude="material"),
+                     "materials", "materials__label")
+        options["material"] = [
+            {"value": str(pk), "label": lbl, "count": n, "selected": str(pk) in active["material"]}
+            for pk, (lbl, n) in sorted(mat.items(), key=lambda x: (x[1][0] or "")) if pk
+        ]
+
+        scr = counts(self._apply_facets(searched, active, exclude="script"),
+                     "inscriptions__script_id", "inscriptions__script__label")
+        options["script"] = [
+            {"value": str(pk), "label": lbl, "count": n, "selected": str(pk) in active["script"]}
+            for pk, (lbl, n) in sorted(scr.items(), key=lambda x: (x[1][0] or "")) if pk
+        ]
+        return options
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         params = self.request.GET
+        active = self._active()
         ctx["query"] = params.get("q", "")
-        ctx["selected_category"] = params.get("category", "")
-        ctx["selected_region"] = params.get("region", "")
-        ctx["inscribed_only"] = params.get("inscribed") == "1"
-        ctx["categories"] = ObjectCategory.choices
-        ctx["regions"] = Region.objects.all()
-        findspot = params.get("findspot", "")
-        if findspot.isdigit():
-            ctx["active_findspot"] = Findspot.objects.filter(pk=int(findspot)).first()
+        ctx["active"] = active
+        ctx["inscribed_only"] = active["inscribed"]
+        ctx["facets"] = self._facet_options(active)
+        ctx["has_filters"] = bool(
+            params.get("q") or active["inscribed"] or any(active[f] for f in self.FACETS)
+        )
+        if active["findspot"] and active["findspot"][0].isdigit():
+            ctx["active_findspot"] = Findspot.objects.filter(pk=active["findspot"][0]).first()
         # Preserve active filters across pagination links.
         carry = params.copy()
         carry.pop("page", None)
