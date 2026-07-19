@@ -1,0 +1,22 @@
+{% load i18n %}
+{% comment %}
+One facet group. Params: `title`, `name` (query param), `options`
+(list of {value, label, count, selected}). Renders nothing when empty.
+Checkboxes auto-submit the enclosing form on change.
+{% endcomment %}
+{% if options %}
+  <fieldset class="mb-3">
+    <legend class="small text-uppercase text-muted fw-semibold mb-1" style="font-size:.72rem;">{{ title }}</legend>
+    {% for opt in options %}
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="{{ name }}" value="{{ opt.value }}"
+               id="f-{{ name }}-{{ opt.value }}" onchange="this.form.submit()"
+               {% if opt.selected %}checked{% endif %}>
+        <label class="form-check-label small d-flex justify-content-between" for="f-{{ name }}-{{ opt.value }}">
+          <span>{{ opt.label }}</span>
+          <span class="text-muted ms-2">{{ opt.count }}</span>
+        </label>
+      </div>
+    {% endfor %}
+  </fieldset>
+{% endif %}
