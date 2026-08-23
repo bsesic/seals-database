@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Statistics" %}{% endblock %}
+{% block meta_description %}{% trans "Survey statistics: distribution of the catalogued seals, bullae and inscriptions by category, region, period, script and material." %}{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">{% trans "Survey statistics" %}</h1>
+    <a class="btn btn-sm btn-outline-secondary" href="{% url 'catalog:artefact-list' %}">{% trans "Back to catalogue" %}</a>
+  </div>
+
+  {% if kpis.total %}
+    {# ---- KPI tiles ---- #}
+    <div class="row row-cols-2 row-cols-md-5 g-3 mb-4">
+      {% for label, value in kpi_tiles %}
+        <div class="col">
+          <div class="card h-100 text-center">
+            <div class="card-body py-3">
+              <div class="h3 mb-0">{{ value }}</div>
+              <div class="small text-muted">{{ label }}</div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    {# ---- Charts ---- #}
+    <div class="row g-4">
+      <div class="col-lg-6"><div class="card h-100"><div class="card-header">{% trans "By category" %}</div>
+        <div class="card-body"><canvas data-chart="category" data-type="doughnut" height="240"></canvas></div></div></div>
+      <div class="col-lg-6"><div class="card h-100"><div class="card-header">{% trans "By region" %}</div>
+        <div class="card-body"><canvas data-chart="region" data-type="bar" height="240"></canvas></div></div></div>
+      <div class="col-12"><div class="card"><div class="card-header">{% trans "By period (chronological)" %}</div>
+        <div class="card-body"><canvas data-chart="period" data-type="bar-vertical" height="120"></canvas></div></div></div>
+      <div class="col-lg-6"><div class="card h-100"><div class="card-header">{% trans "By script" %}</div>
+        <div class="card-body"><canvas data-chart="script" data-type="bar" height="240"></canvas></div></div></div>
+      <div class="col-lg-6"><div class="card h-100"><div class="card-header">{% trans "By material" %}</div>
+        <div class="card-body"><canvas data-chart="material" data-type="bar" height="240"></canvas></div></div></div>
+      <div class="col-12"><div class="card"><div class="card-header">{% trans "Top find spots" %}</div>
+        <div class="card-body"><canvas data-chart="findspot" data-type="bar" height="160"></canvas></div></div></div>
+    </div>
+
+    {{ charts|json_script:"charts-data" }}
+  {% else %}
+    <p class="text-muted">{% trans "No published objects yet — statistics will appear once the survey has data." %}</p>
+  {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+  {% if kpis.total %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>
+      (function () {
+        var data = JSON.parse(document.getElementById('charts-data').textContent);
+        var dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        Chart.defaults.color = dark ? '#adb5bd' : '#495057';
+        Chart.defaults.borderColor = dark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.1)';
+        // Colourblind-friendly categorical palette (Tableau 10).
+        var PALETTE = ['#4e79a7','#f28e2b','#59a14f','#e15759','#76b7b2','#edc948',
+                       '#b07aa1','#ff9da7','#9c755f','#bab0ac','#86bcb6','#d37295'];
+
+        document.querySelectorAll('canvas[data-chart]').forEach(function (canvas) {
+          var key = canvas.dataset.chart, kind = canvas.dataset.type;
+          var d = data[key];
+          if (!d || !d.labels.length) {
+            canvas.replaceWith(Object.assign(document.createElement('p'),
+              {className: 'text-muted small mb-0', textContent: 'No data.'}));
+            return;
+          }
+          var horizontal = kind === 'bar';
+          var isDoughnut = kind === 'doughnut';
+          new Chart(canvas, {
+            type: isDoughnut ? 'doughnut' : 'bar',
+            data: {
+              labels: d.labels,
+              datasets: [{
+                label: 'Objects',
+                data: d.data,
+                backgroundColor: isDoughnut ? PALETTE : '#4e79a7',
+                borderWidth: isDoughnut ? 1 : 0
+              }]
+            },
+            options: {
+              indexAxis: horizontal ? 'y' : 'x',
+              responsive: true,
+              maintainAspectRatio: true,
+              plugins: { legend: { display: isDoughnut, position: 'right' } },
+              scales: isDoughnut ? {} : {
+                x: { beginAtZero: true, ticks: { precision: 0 } },
+                y: { beginAtZero: true, ticks: { precision: 0 } }
+              }
+            }
+          });
+        });
+      })();
+    </script>
+  {% endif %}
+{% endblock %}

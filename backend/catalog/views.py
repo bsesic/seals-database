@@ -5,8 +5,9 @@ catalogue is public: anyone can browse published artefacts. Editing happens in
 the admin. Drafts (``is_published=False``) are hidden from the public list/detail.
 """
 
-from django.db.models import Count, Q
+from django.db.models import Count, F, Q
 from django.urls import reverse
+from django.utils.translation import gettext as _
 from django.views.generic import DetailView, ListView, TemplateView
 
 from catalog.models import Artefact, Findspot, ObjectCategory
@@ -190,4 +191,75 @@ class ArtefactMapView(TemplateView):
             }
             for f in findspots
         ]
+        return ctx
+
+
+class StatisticsView(TemplateView):
+    """Survey statistics over published artefacts: distribution by category,
+    region, period (chronological), script, material and top find spots."""
+
+    template_name = "catalog/statistics.html"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        pub = Artefact.objects.filter(is_published=True)
+
+        # .order_by() clears Meta.ordering so it doesn't leak into GROUP BY.
+        cat_counts = dict(pub.values_list("category").order_by().annotate(n=Count("id")))
+        ctx["kpis"] = kpis = {
+            "total": pub.count(),
+            "inscribed": pub.filter(is_inscribed=True).count(),
+            "iconography": pub.filter(has_iconography=True).count(),
+            "findspots": pub.exclude(findspot=None).values("findspot").distinct().count(),
+            "regions": pub.exclude(region=None).values("region").distinct().count(),
+        }
+        ctx["kpi_tiles"] = [
+            (_("Objects"), kpis["total"]),
+            (_("Inscribed"), kpis["inscribed"]),
+            (_("With iconography"), kpis["iconography"]),
+            (_("Find spots"), kpis["findspots"]),
+            (_("Regions"), kpis["regions"]),
+        ]
+
+        by_category = [
+            {"label": str(label), "n": cat_counts.get(value, 0)}
+            for value, label in ObjectCategory.choices
+            if cat_counts.get(value, 0)
+        ]
+        by_region = list(
+            pub.exclude(region=None).values(label=F("region__label"))
+            .order_by().annotate(n=Count("id")).order_by("-n")
+        )
+        by_period = list(
+            pub.exclude(period=None)
+            .values(label=F("period__label"), start=F("period__start_year"))
+            .order_by().annotate(n=Count("id")).order_by("start", "label")
+        )
+        by_script = list(
+            pub.filter(inscriptions__script__isnull=False)
+            .values(label=F("inscriptions__script__label"))
+            .order_by().annotate(n=Count("id", distinct=True)).order_by("-n")
+        )
+        by_material = list(
+            pub.filter(materials__isnull=False)
+            .values(label=F("materials__label"))
+            .order_by().annotate(n=Count("id", distinct=True)).order_by("-n")
+        )
+        top_findspots = list(
+            pub.exclude(findspot=None).values(label=F("findspot__name_modern"))
+            .order_by().annotate(n=Count("id")).order_by("-n")[:12]
+        )
+
+        def pack(rows):
+            return {"labels": [r["label"] or "—" for r in rows], "data": [r["n"] for r in rows]}
+
+        ctx["charts"] = {
+            "category": {"labels": [r["label"] for r in by_category],
+                         "data": [r["n"] for r in by_category]},
+            "region": pack(by_region),
+            "period": pack(by_period),
+            "script": pack(by_script),
+            "material": pack(by_material),
+            "findspot": pack(top_findspots),
+        }
         return ctx
