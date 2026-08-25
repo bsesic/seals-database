@@ -1,0 +1,27 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block breadcrumbs %}
+  <div class="px-4 py-2">
+    <a href="{% url 'admin:index' %}">{% trans "Home" %}</a>
+    &rsaquo; <a href="{% url 'admin:catalog_publication_changelist' %}">{% trans "Publications" %}</a>
+    &rsaquo; {% trans "Import BibTeX" %}
+  </div>
+{% endblock %}
+
+{% block content %}
+  <div class="px-4">
+    <p class="help">
+      {% trans "Paste one or more BibTeX entries. Existing publications are matched and updated by their citation key; new ones are created. Parsed fields and a DIN-style citation are generated automatically and can be edited afterwards." %}
+    </p>
+    <form method="post">
+      {% csrf_token %}
+      <textarea name="bibtex" rows="18" style="width:100%; font-family:monospace;"
+                placeholder="@article{Author2020, title = {…}, author = {Surname, First and Other, Name}, journal = {…}, year = {2020}, pages = {1--20}}"></textarea>
+      <div style="margin-top:1rem;">
+        <button type="submit" class="button default">{% trans "Import" %}</button>
+        <a href="{% url 'admin:catalog_publication_changelist' %}" class="button" style="margin-left:.5rem;">{% trans "Cancel" %}</a>
+      </div>
+    </form>
+  </div>
+{% endblock %}
