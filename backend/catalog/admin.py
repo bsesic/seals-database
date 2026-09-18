@@ -98,9 +98,15 @@ class ArtefactAdmin(ModelAdmin, SimpleHistoryAdmin):
         ("Dating & attribution", {"fields": ("period", "dating_text", "ruler")}),
         ("Origin", {"fields": ("origin_region", "origin_note")}),
         ("Keeping & condition", {"fields": ("repository", "condition", "preservation_note")}),
-        ("Content", {"fields": ("is_inscribed", "has_iconography", "is_published", "materials", "iconographic_features")}),
+        ("Content", {"fields": (
+            "is_inscribed", "has_iconography", "is_published",
+            "materials", "iconographic_features",
+        )}),
         ("Description", {"fields": ("description", "notes")}),
-        ("System", {"fields": ("uuid", "slug", "organization", "created_by", "created_at", "updated_at"), "classes": ("collapse",)}),
+        ("System", {
+            "fields": ("uuid", "slug", "organization", "created_by", "created_at", "updated_at"),
+            "classes": ("collapse",),
+        }),
     )
 
     def save_model(self, request, obj, form, change):
@@ -112,7 +118,10 @@ class ArtefactAdmin(ModelAdmin, SimpleHistoryAdmin):
 class ReadingInline(TabularInline):
     model = Reading
     extra = 1
-    fields = ("reading_normalized", "transliteration", "translation_en", "certainty", "is_preferred", "generated_by_model")
+    fields = (
+        "reading_normalized", "transliteration", "translation_en",
+        "certainty", "is_preferred", "generated_by_model",
+    )
 
 
 @admin.register(Inscription)
