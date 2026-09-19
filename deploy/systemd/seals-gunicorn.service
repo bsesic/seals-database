@@ -1,22 +1,22 @@
 [Unit]
-Description=SaaS Boilerplate - Gunicorn WSGI server
+Description=Seals Database - Gunicorn WSGI server
 After=network.target postgresql.service redis.service
 Wants=redis.service
 
 [Service]
 Type=simple
-User=saas
-Group=saas
-WorkingDirectory=/opt/saas-boilerplate/backend
-EnvironmentFile=/opt/saas-boilerplate/backend/.env
+User=seals
+Group=seals
+WorkingDirectory=/opt/seals-database/backend
+EnvironmentFile=/opt/seals-database/backend/.env
 
-ExecStart=/opt/saas-boilerplate/venv/bin/gunicorn \
+ExecStart=/opt/seals-database/venv/bin/gunicorn \
     --bind 127.0.0.1:8000 \
     --workers 3 \
     --graceful-timeout 30 \
     --timeout 60 \
-    --access-logfile /var/log/saas/access.log \
-    --error-logfile /var/log/saas/error.log \
+    --access-logfile /var/log/seals/access.log \
+    --error-logfile /var/log/seals/error.log \
     core.wsgi:application
 
 Restart=on-failure
@@ -29,7 +29,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/opt/saas-boilerplate/backend /var/log/saas
+ReadWritePaths=/opt/seals-database/backend /var/log/seals
 
 [Install]
 WantedBy=multi-user.target

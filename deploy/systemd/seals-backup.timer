@@ -1,5 +1,5 @@
 [Unit]
-Description=SaaS Boilerplate daily backup
+Description=Seals Database daily backup
 
 [Timer]
 OnCalendar=*-*-* 02:15:00

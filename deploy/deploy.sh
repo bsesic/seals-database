@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ──────────────────────────────────────────────────────────────────────────────
-# SaaS Boilerplate production deploy script
+# Seals Database production deploy script
 #
 # Run on the server. Deploys the current release (latest annotated git tag by
 # default; override with DEPLOY_REF=<tag|branch>). Pulls code, installs deps,
@@ -14,12 +14,12 @@
 set -euo pipefail
 
 # ── Configuration (override via environment) ─────────────────────────────────
-PROJECT_DIR="${PROJECT_DIR:-/opt/saas-boilerplate}"
+PROJECT_DIR="${PROJECT_DIR:-/opt/seals-database}"
 BACKEND_DIR="${BACKEND_DIR:-$PROJECT_DIR/backend}"
 VENV_DIR="${VENV_DIR:-$PROJECT_DIR/venv}"
 PYTHON="${PYTHON:-$VENV_DIR/bin/python}"
 PIP="${PIP:-$VENV_DIR/bin/pip}"
-SERVICES="${SERVICES:-saas-gunicorn}"
+SERVICES="${SERVICES:-seals-gunicorn}"
 HEALTHCHECK_URL="${HEALTHCHECK_URL:-https://example.com/readyz}"
 HEALTHCHECK_TIMEOUT="${HEALTHCHECK_TIMEOUT:-15}"
 

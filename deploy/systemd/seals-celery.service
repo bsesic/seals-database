@@ -1,18 +1,18 @@
 [Unit]
-Description=SaaS Boilerplate - Celery worker
+Description=Seals Database - Celery worker
 After=network.target redis.service postgresql.service
 Requires=redis.service
 
 [Service]
 Type=simple
-User=saas
-Group=saas
-WorkingDirectory=/opt/saas-boilerplate/backend
-EnvironmentFile=/opt/saas-boilerplate/backend/.env
+User=seals
+Group=seals
+WorkingDirectory=/opt/seals-database/backend
+EnvironmentFile=/opt/seals-database/backend/.env
 
-ExecStart=/opt/saas-boilerplate/venv/bin/celery -A core worker \
+ExecStart=/opt/seals-database/venv/bin/celery -A core worker \
     --loglevel=info \
-    --logfile=/var/log/saas/celery.log
+    --logfile=/var/log/seals/celery.log
 
 Restart=on-failure
 RestartSec=5
@@ -24,7 +24,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/opt/saas-boilerplate/backend /var/log/saas
+ReadWritePaths=/opt/seals-database/backend /var/log/seals
 
 [Install]
 WantedBy=multi-user.target
