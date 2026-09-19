@@ -33,9 +33,9 @@ jobs:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_USER: saas
-          POSTGRES_PASSWORD: saas
-          POSTGRES_DB: saas
+          POSTGRES_USER: seals
+          POSTGRES_PASSWORD: seals
+          POSTGRES_DB: seals
         ports:
           - 5432:5432
         options: >-
@@ -57,7 +57,7 @@ jobs:
     env:
       DJANGO_SECRET_KEY: ci-secret-not-for-prod
       DJANGO_DEBUG: "True"
-      DATABASE_URL: postgres://saas:saas@localhost:5432/saas
+      DATABASE_URL: postgres://seals:seals@localhost:5432/seals
       REDIS_URL: redis://localhost:6379/0
 
     steps:

@@ -10,13 +10,13 @@ services:
     image: postgres:16
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${DB_NAME:-saas}
-      POSTGRES_USER: ${DB_USER:-saas}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-saas}
+      POSTGRES_DB: ${DB_NAME:-seals}
+      POSTGRES_USER: ${DB_USER:-seals}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-seals}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-saas} -d ${DB_NAME:-saas}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-seals} -d ${DB_NAME:-seals}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -26,9 +26,9 @@ services:
     restart: unless-stopped
 
   web:
-    # CI/CD pulls the prebuilt image (SAAS_IMAGE set by the deploy workflow).
+    # CI/CD pulls the prebuilt image (SEALS_IMAGE set by the deploy workflow).
     # Locally it falls back to building from ../backend.
-    image: ${SAAS_IMAGE:-ghcr.io/bsesic/saas-boilerplate-backend:latest}
+    image: ${SEALS_IMAGE:-ghcr.io/bsesic/seals-database-backend:latest}
     build:
       context: ../backend
       dockerfile: Dockerfile
@@ -62,7 +62,7 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx/saas-boilerplate.docker.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/seals-database.docker.conf:/etc/nginx/conf.d/default.conf:ro
       - static_data:/var/www/static:ro
       - media_data:/var/www/media:ro
       - /etc/letsencrypt:/etc/letsencrypt:ro
