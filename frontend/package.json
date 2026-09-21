@@ -9,7 +9,10 @@
   },
   "dependencies": {
     "@popperjs/core": "^2.11.8",
-    "bootstrap": "^5.3.3"
+    "bootstrap": "^5.3.3",
+    "chart.js": "^4.4.1",
+    "leaflet": "^1.9.4",
+    "mirador": "^3.4.3"
   },
   "devDependencies": {
     "sass": "^1.80.0",
