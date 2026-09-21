@@ -1,6 +1,10 @@
-from django.contrib import admin
+from django.contrib import admin, messages
+from django.shortcuts import redirect, render
+from django.urls import path
 from simple_history.admin import SimpleHistoryAdmin
 from unfold.admin import ModelAdmin, TabularInline
+
+from catalog.bibtex import apply_entry, import_bibtex, parse_bibtex
 
 from catalog.models import (
     Artefact,
@@ -213,3 +217,43 @@ class StratigraphicContextAdmin(ModelAdmin):
 class PublicationAdmin(ModelAdmin):
     list_display = ("bibtex_key", "authors", "year", "title")
     search_fields = ("bibtex_key", "authors", "title", "bibtex_raw")
+    change_list_template = "admin/catalog/publication_change_list.html"
+
+    def save_model(self, request, obj, form, change):
+        """If BibTeX was pasted into bibtex_raw, parse it to fill the fields."""
+        if obj.bibtex_raw and obj.bibtex_raw.strip():
+            entries = parse_bibtex(obj.bibtex_raw)
+            if entries:
+                apply_entry(entries[0], obj)
+        super().save_model(request, obj, form, change)
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom = [
+            path(
+                "import-bibtex/",
+                self.admin_site.admin_view(self.import_bibtex_view),
+                name="catalog_publication_import_bibtex",
+            )
+        ]
+        return custom + urls
+
+    def import_bibtex_view(self, request):
+        if request.method == "POST":
+            text = request.POST.get("bibtex", "")
+            created, updated, errors = import_bibtex(text)
+            if created or updated:
+                messages.success(
+                    request, f"Imported {created} new and updated {updated} publication(s)."
+                )
+            if not created and not updated and not errors:
+                messages.warning(request, "No valid BibTeX entries found.")
+            for err in errors:
+                messages.error(request, f"Skipped {err}")
+            return redirect("admin:catalog_publication_changelist")
+        context = {
+            **self.admin_site.each_context(request),
+            "title": "Import BibTeX",
+            "opts": self.model._meta,
+        }
+        return render(request, "admin/catalog/import_bibtex.html", context)
