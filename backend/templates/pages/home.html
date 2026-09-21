@@ -2,19 +2,66 @@
 {% load i18n %}
 
 {% block title %}{% trans "Home" %}{% endblock %}
-{% block meta_description %}{% trans "A templates-first Django SaaS boilerplate to launch products fast." %}{% endblock %}
-{% block og_description %}{% trans "A templates-first Django SaaS boilerplate to launch products fast." %}{% endblock %}
+{% block meta_description %}{% trans "A catalogue and knowledge graph of stamp and cylinder seals, bullae and inscriptions from the Iron Age II to the Persian period in the Southern Levant." %}{% endblock %}
+{% block og_description %}{% trans "A catalogue and knowledge graph of stamp and cylinder seals, bullae and inscriptions from the Iron Age II to the Persian period in the Southern Levant." %}{% endblock %}
 
 {% block content %}
   <div class="py-5 text-center">
-    <h1 class="display-5">SaaS Boilerplate</h1>
-    <p class="lead text-muted">
-      {% trans "A templates-first Django starting point. Replace this landing page with your product story." %}
+    <h1 class="display-5">{% trans "Seals Database" %}</h1>
+    <p class="lead text-muted mx-auto" style="max-width: 46rem;">
+      {% trans "A publication-oriented catalogue and knowledge graph of inscribed stamp and cylinder seals, their impressions (bullae), jar-handle impressions and inscriptions from the Iron Age II to the Persian period in the Southern Levant — Judah, Samaria and Transjordan." %}
     </p>
-    {% if not user.is_authenticated %}
-      <a class="btn btn-primary btn-lg mt-3" href="{% url 'account_signup' %}">{% trans "Get started" %}</a>
-    {% else %}
-      <a class="btn btn-primary btn-lg mt-3" href="{% url 'profile' %}">{% trans "Go to your profile" %}</a>
-    {% endif %}
+    <div class="mt-4 d-flex flex-wrap gap-2 justify-content-center">
+      <a class="btn btn-primary btn-lg" href="{% url 'catalog:artefact-list' %}">{% trans "Browse the catalogue" %}</a>
+      <a class="btn btn-outline-secondary btn-lg" href="{% url 'catalog:artefact-map' %}">{% trans "Find-spot map" %}</a>
+    </div>
+  </div>
+
+  <div class="row row-cols-1 row-cols-md-3 g-4 pb-5">
+    <div class="col">
+      <div class="card h-100">
+        <div class="card-body">
+          <h2 class="h5 card-title">{% trans "Catalogue" %}</h2>
+          <p class="card-text text-muted small">{% trans "Browse and search the corpus with full-text search and facets by type, region, period, script and material." %}</p>
+          <a href="{% url 'catalog:artefact-list' %}">{% trans "Open the catalogue →" %}</a>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card h-100">
+        <div class="card-body">
+          <h2 class="h5 card-title">{% trans "Map" %}</h2>
+          <p class="card-text text-muted small">{% trans "Explore find spots across the Southern Levant and jump straight to the objects found there." %}</p>
+          <a href="{% url 'catalog:artefact-map' %}">{% trans "Open the map →" %}</a>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card h-100">
+        <div class="card-body">
+          <h2 class="h5 card-title">{% trans "Open data & API" %}</h2>
+          <p class="card-text text-muted small">{% trans "The catalogue is available as a public REST API, published as Open Access and Linked Open Data." %}</p>
+          <a href="{% url 'swagger-ui' %}">{% trans "API documentation →" %}</a>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card h-100">
+        <div class="card-body">
+          <h2 class="h5 card-title">{% trans "About the project" %}</h2>
+          <p class="card-text text-muted small">{% trans "Background, scope and methodology of the survey and its epigraphic and iconographic analysis." %}</p>
+          <a href="{% url 'pages:about' %}">{% trans "Read more →" %}</a>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card h-100">
+        <div class="card-body">
+          <h2 class="h5 card-title">{% trans "Contact" %}</h2>
+          <p class="card-text text-muted small">{% trans "Questions, corrections or data contributions are welcome." %}</p>
+          <a href="{% url 'pages:contact' %}">{% trans "Get in touch →" %}</a>
+        </div>
+      </div>
+    </div>
   </div>
 {% endblock %}
