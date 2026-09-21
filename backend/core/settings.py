@@ -1,5 +1,5 @@
 """
-Django settings for the SaaS boilerplate.
+Django settings for the Seals Database.
 
 Single monolithic settings module driven by environment variables (django-environ).
 Production hardening lives in the ``if not DEBUG:`` block at the bottom.
@@ -332,8 +332,9 @@ REST_FRAMEWORK = {
 }
 
 SPECTACULAR_SETTINGS = {
-    "TITLE": "SaaS Boilerplate API",
-    "DESCRIPTION": "Tenant-scoped REST API for the SaaS boilerplate.",
+    "TITLE": "Seals Database API",
+    "DESCRIPTION": "Public REST API for the Seals Database catalogue of stamp "
+    "and cylinder seals, bullae and inscriptions from the Southern Levant.",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
 }
@@ -356,8 +357,8 @@ ACTSTREAM_SETTINGS = {
 
 # --- Unfold admin theme ----------------------------------------------------
 UNFOLD = {
-    "SITE_TITLE": "SaaS Boilerplate",
-    "SITE_HEADER": "SaaS Boilerplate",
+    "SITE_TITLE": "Seals Database",
+    "SITE_HEADER": "Seals Database",
     "SITE_SUBHEADER": _("Administration"),
 }
 
