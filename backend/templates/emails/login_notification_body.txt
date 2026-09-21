@@ -8,4 +8,4 @@ Device: {{ user_agent|default:"unknown" }}
 If this was you, no action is needed. If you don't recognise this activity,
 please change your password immediately.
 
-The SaaS Boilerplate team
+The Seals Database team
