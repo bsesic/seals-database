@@ -1,0 +1,32 @@
+[Unit]
+Description=Seals Database - Daphne ASGI server (use instead of gunicorn for WebSockets/Channels)
+After=network.target postgresql.service redis.service
+Wants=redis.service
+
+[Service]
+Type=simple
+User=seals
+Group=seals
+WorkingDirectory=/opt/seals-database/backend
+EnvironmentFile=/opt/seals-database/backend/.env
+
+ExecStart=/opt/seals-database/venv/bin/daphne \
+    -b 127.0.0.1 \
+    -p 8000 \
+    --access-log /var/log/seals/access.log \
+    core.asgi:application
+
+Restart=on-failure
+RestartSec=3
+KillSignal=SIGTERM
+TimeoutStopSec=30
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/seals-database/backend /var/log/seals
+
+[Install]
+WantedBy=multi-user.target

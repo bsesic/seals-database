@@ -1,17 +1,17 @@
 [Unit]
-Description=SaaS Boilerplate - Flower (Celery monitoring)
+Description=Seals Database - Flower (Celery monitoring)
 After=network.target redis.service
 Requires=redis.service
 
 [Service]
 Type=simple
-User=saas
-Group=saas
-WorkingDirectory=/opt/saas-boilerplate/backend
-EnvironmentFile=/opt/saas-boilerplate/backend/.env
+User=seals
+Group=seals
+WorkingDirectory=/opt/seals-database/backend
+EnvironmentFile=/opt/seals-database/backend/.env
 
 # Protect the dashboard with basic auth in production.
-ExecStart=/opt/saas-boilerplate/venv/bin/celery -A core flower \
+ExecStart=/opt/seals-database/venv/bin/celery -A core flower \
     --address=127.0.0.1 \
     --port=5555 \
     --basic-auth=${FLOWER_USER}:${FLOWER_PASSWORD}
@@ -26,7 +26,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/opt/saas-boilerplate/backend /var/log/saas
+ReadWritePaths=/opt/seals-database/backend /var/log/seals
 
 [Install]
 WantedBy=multi-user.target
