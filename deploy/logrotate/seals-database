@@ -1,14 +1,14 @@
-# /etc/logrotate.d/saas-boilerplate
+# /etc/logrotate.d/seals-database
 #
 # Rotates the app logs written by the systemd units (gunicorn/daphne access +
-# error, celery, celerybeat) to /var/log/saas/. copytruncate is used so the
+# error, celery, celerybeat) to /var/log/seals/. copytruncate is used so the
 # long-running processes keep writing to the same file descriptor without a
 # restart/reopen.
 #
-# Install: copy to /etc/logrotate.d/saas-boilerplate (root-owned, mode 0644).
+# Install: copy to /etc/logrotate.d/seals-database (root-owned, mode 0644).
 # Adjust the path and the `su` user/group to match your deployment.
 
-/var/log/saas/*.log {
+/var/log/seals/*.log {
     daily
     rotate 14
     missingok
@@ -18,6 +18,6 @@
     copytruncate
     dateext
     dateformat -%Y-%m-%d
-    su saas saas
-    create 0640 saas saas
+    su seals seals
+    create 0640 seals seals
 }

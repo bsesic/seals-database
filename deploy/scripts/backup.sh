@@ -1,28 +1,28 @@
 #!/usr/bin/env bash
-# SaaS Boilerplate backup — fast DB + media + .env snapshot.
+# Seals Database backup — fast DB + media + .env snapshot.
 #
 # Writes a timestamped snapshot under $BACKUP_ROOT and (optionally) pushes it
-# offsite with restic. Run via the systemd timer (deploy/systemd/saas-backup.*).
+# offsite with restic. Run via the systemd timer (deploy/systemd/seals-backup.*).
 #
 # Install:
-#   sudo cp deploy/scripts/backup.sh /usr/local/bin/saas-backup.sh
-#   sudo chmod +x /usr/local/bin/saas-backup.sh
-#   sudo mkdir -p /var/backups/saas && sudo chmod 700 /var/backups/saas
-#   sudo cp deploy/systemd/saas-backup.{service,timer} /etc/systemd/system/
-#   sudo systemctl daemon-reload && sudo systemctl enable --now saas-backup.timer
+#   sudo cp deploy/scripts/backup.sh /usr/local/bin/seals-backup.sh
+#   sudo chmod +x /usr/local/bin/seals-backup.sh
+#   sudo mkdir -p /var/backups/seals && sudo chmod 700 /var/backups/seals
+#   sudo cp deploy/systemd/seals-backup.{service,timer} /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now seals-backup.timer
 #
 # Restore quick-reference:
-#   pg_restore -h <host> -U <user> -d <db> -j 4 -c /var/backups/saas/<TS>/db.dump
-#   tar -xzf /var/backups/saas/<TS>/media.tar.gz -C /opt/saas-boilerplate/backend/
-#   gpg --decrypt --passphrase-file /etc/saas/backup.passphrase env.gpg > backend/.env
+#   pg_restore -h <host> -U <user> -d <db> -j 4 -c /var/backups/seals/<TS>/db.dump
+#   tar -xzf /var/backups/seals/<TS>/media.tar.gz -C /opt/seals-database/backend/
+#   gpg --decrypt --passphrase-file /etc/seals/backup.passphrase env.gpg > backend/.env
 #
 set -euo pipefail
 
-PROJECT_DIR="${PROJECT_DIR:-/opt/saas-boilerplate}"
+PROJECT_DIR="${PROJECT_DIR:-/opt/seals-database}"
 BACKEND_DIR="${BACKEND_DIR:-$PROJECT_DIR/backend}"
-BACKUP_ROOT="${BACKUP_ROOT:-/var/backups/saas}"
+BACKUP_ROOT="${BACKUP_ROOT:-/var/backups/seals}"
 RETENTION_DAYS="${RETENTION_DAYS:-14}"
-PASSPHRASE_FILE="${PASSPHRASE_FILE:-/etc/saas/backup.passphrase}"
+PASSPHRASE_FILE="${PASSPHRASE_FILE:-/etc/seals/backup.passphrase}"
 TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
 DEST="$BACKUP_ROOT/$TIMESTAMP"
 
@@ -64,7 +64,7 @@ fi
 
 # --- 4. Manifest ----
 cat > MANIFEST.txt <<EOF
-SaaS Boilerplate backup
+Seals Database backup
 Timestamp: $TIMESTAMP
 Host:      $(hostname -f 2>/dev/null || hostname)
 DB:        $DB_NAME @ $DB_HOST:$DB_PORT
@@ -73,7 +73,7 @@ EOF
 
 # --- 5. Offsite push (optional) — restic to B2/S3/etc. when configured ----
 if [ -n "${RESTIC_REPOSITORY:-}" ] && command -v restic >/dev/null 2>&1; then
-    restic backup "$DEST" --tag saas-backup || echo "WARN: restic backup failed"
+    restic backup "$DEST" --tag seals-backup || echo "WARN: restic backup failed"
     restic forget --keep-daily "$RETENTION_DAYS" --prune || true
 fi
 
