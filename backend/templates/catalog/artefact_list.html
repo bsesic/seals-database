@@ -10,6 +10,7 @@
     <div class="d-flex align-items-center gap-3">
       <span class="text-muted small">{{ page_obj.paginator.count }} {% trans "objects" %}</span>
       <a class="btn btn-sm btn-outline-secondary" href="{% url 'catalog:artefact-map' %}">{% trans "Map" %}</a>
+      <a class="btn btn-sm btn-outline-secondary" href="{% url 'catalog:statistics' %}">{% trans "Statistics" %}</a>
     </div>
   </div>
 
