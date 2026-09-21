@@ -1,13 +1,8 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n django_vite %}
 
 {% block title %}{% trans "Find-spot map" %}{% endblock %}
 {% block meta_description %}{% trans "Map of find spots of the catalogued seals, bullae and inscriptions in the Southern Levant." %}{% endblock %}
-
-{% block extra_css %}
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-{% endblock %}
 
 {% block content %}
   <div class="d-flex justify-content-between align-items-center mb-3">
@@ -24,32 +19,6 @@
 {% endblock %}
 
 {% block extra_js %}
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-  <script>
-    (function () {
-      var findspots = JSON.parse(document.getElementById('findspots-data').textContent);
-      var map = L.map('map').setView([31.6, 35.3], 7);  // Southern Levant
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 18,
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-      }).addTo(map);
-
-      var bounds = [];
-      findspots.forEach(function (f) {
-        var radius = 6 + Math.min(18, Math.sqrt(f.count) * 3);
-        var marker = L.circleMarker([f.lat, f.lng], {
-          radius: radius, color: '#0d6efd', weight: 1, fillColor: '#0d6efd', fillOpacity: 0.55
-        }).addTo(map);
-        var html = '<strong>' + f.name + '</strong>';
-        if (f.ancient) { html += ' <span class="text-muted">(' + f.ancient + ')</span>'; }
-        if (f.region) { html += '<br>' + f.region; }
-        html += '<br>' + f.count + ' object(s)';
-        html += '<br><a href="' + f.url + '">View objects →</a>';
-        marker.bindPopup(html);
-        bounds.push([f.lat, f.lng]);
-      });
-      if (bounds.length) { map.fitBounds(bounds, { padding: [40, 40], maxZoom: 10 }); }
-    })();
-  </script>
+  {# Self-hosted Leaflet bundle (Leaflet + CSS + the map init). #}
+  {% vite_asset 'src/map.js' %}
 {% endblock %}
