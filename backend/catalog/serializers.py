@@ -191,7 +191,9 @@ class ArtefactDetailSerializer(serializers.ModelSerializer):
     condition = serializers.CharField(source="get_condition_display", read_only=True)
     object_type = serializers.CharField(source="object_type.label", default=None, read_only=True)
     region = serializers.CharField(source="region.label", default=None, read_only=True)
-    origin_region = serializers.CharField(source="origin_region.label", default=None, read_only=True)
+    origin_region = serializers.CharField(
+        source="origin_region.label", default=None, read_only=True
+    )
     repository = serializers.CharField(source="repository.name", default=None, read_only=True)
     period = PeriodSerializer(read_only=True)
     findspot = FindspotSerializer(read_only=True)
