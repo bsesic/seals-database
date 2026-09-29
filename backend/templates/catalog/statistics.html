@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n django_vite %}
 
 {% block title %}{% trans "Statistics" %}{% endblock %}
 {% block meta_description %}{% trans "Survey statistics: distribution of the catalogued seals, bullae and inscriptions by category, region, period, script and material." %}{% endblock %}
@@ -49,51 +49,7 @@
 
 {% block extra_js %}
   {% if kpis.total %}
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    <script>
-      (function () {
-        var data = JSON.parse(document.getElementById('charts-data').textContent);
-        var dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-        Chart.defaults.color = dark ? '#adb5bd' : '#495057';
-        Chart.defaults.borderColor = dark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.1)';
-        // Colourblind-friendly categorical palette (Tableau 10).
-        var PALETTE = ['#4e79a7','#f28e2b','#59a14f','#e15759','#76b7b2','#edc948',
-                       '#b07aa1','#ff9da7','#9c755f','#bab0ac','#86bcb6','#d37295'];
-
-        document.querySelectorAll('canvas[data-chart]').forEach(function (canvas) {
-          var key = canvas.dataset.chart, kind = canvas.dataset.type;
-          var d = data[key];
-          if (!d || !d.labels.length) {
-            canvas.replaceWith(Object.assign(document.createElement('p'),
-              {className: 'text-muted small mb-0', textContent: 'No data.'}));
-            return;
-          }
-          var horizontal = kind === 'bar';
-          var isDoughnut = kind === 'doughnut';
-          new Chart(canvas, {
-            type: isDoughnut ? 'doughnut' : 'bar',
-            data: {
-              labels: d.labels,
-              datasets: [{
-                label: 'Objects',
-                data: d.data,
-                backgroundColor: isDoughnut ? PALETTE : '#4e79a7',
-                borderWidth: isDoughnut ? 1 : 0
-              }]
-            },
-            options: {
-              indexAxis: horizontal ? 'y' : 'x',
-              responsive: true,
-              maintainAspectRatio: true,
-              plugins: { legend: { display: isDoughnut, position: 'right' } },
-              scales: isDoughnut ? {} : {
-                x: { beginAtZero: true, ticks: { precision: 0 } },
-                y: { beginAtZero: true, ticks: { precision: 0 } }
-              }
-            }
-          });
-        });
-      })();
-    </script>
+    {# Self-hosted Chart.js bundle (Chart.js + the chart init). #}
+    {% vite_asset 'src/charts.js' %}
   {% endif %}
 {% endblock %}
