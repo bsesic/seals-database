@@ -317,7 +317,8 @@ class Artefact(OrganizationOwnedModel, TimeStampedModel):
         Findspot, null=True, blank=True, on_delete=models.SET_NULL, related_name="artefacts"
     )
     find_context = models.ForeignKey(
-        StratigraphicContext, null=True, blank=True, on_delete=models.SET_NULL, related_name="artefacts"
+        StratigraphicContext, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="artefacts",
     )
     region = models.ForeignKey(
         Region, null=True, blank=True, on_delete=models.SET_NULL, related_name="artefacts",
@@ -334,7 +335,8 @@ class Artefact(OrganizationOwnedModel, TimeStampedModel):
         Period, null=True, blank=True, on_delete=models.SET_NULL, related_name="artefacts"
     )
     dating_text = models.CharField(
-        max_length=255, blank=True, help_text=_("Free dating note, e.g. epigraphic date or a conflict.")
+        max_length=255, blank=True,
+        help_text=_("Free dating note, e.g. epigraphic date or a conflict."),
     )
     ruler = models.CharField(
         max_length=255, blank=True, help_text=_("Associated ruler / dynasty, if identifiable.")
@@ -342,7 +344,8 @@ class Artefact(OrganizationOwnedModel, TimeStampedModel):
 
     # Origin (may differ from find spot — used for trade-route / workshop analysis)
     origin_region = models.ForeignKey(
-        Region, null=True, blank=True, on_delete=models.SET_NULL, related_name="artefacts_originating"
+        Region, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="artefacts_originating",
     )
     origin_note = models.CharField(max_length=255, blank=True)
 
@@ -521,7 +524,10 @@ class Inscription(OrganizationOwnedModel, TimeStampedModel):
         Language, null=True, blank=True, on_delete=models.SET_NULL, related_name="inscriptions"
     )
     technique = models.CharField(max_length=120, blank=True, help_text=_("incised, relief, …"))
-    position = models.CharField(max_length=160, blank=True, help_text=_("e.g. 'around field', 'two registers'."))
+    position = models.CharField(
+        max_length=160, blank=True,
+        help_text=_("e.g. 'around field', 'two registers'."),
+    )
     line_count = models.PositiveIntegerField(null=True, blank=True)
     notes = models.TextField(blank=True)
     history = HistoricalRecords()
@@ -590,7 +596,8 @@ class ProvenanceEvent(models.Model):
         max_length=20, choices=EventType.choices, default=EventType.UNKNOWN
     )
     repository = models.ForeignKey(
-        Repository, null=True, blank=True, on_delete=models.SET_NULL, related_name="provenance_events"
+        Repository, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="provenance_events",
     )
     place = models.CharField(max_length=255, blank=True)
     date_text = models.CharField(max_length=120, blank=True)
