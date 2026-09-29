@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n django_vite %}
 
 {% block title %}{{ artefact.title }}{% endblock %}
 {% block meta_description %}{{ artefact.description|striptags|truncatewords:30 }}{% endblock %}
@@ -177,17 +177,7 @@
 
 {% block extra_js %}
   {% if iiif_manifests %}
-    <link rel="stylesheet" href="https://unpkg.com/mirador@3.4.3/dist/mirador.min.css">
-    <script src="https://unpkg.com/mirador@3.4.3/dist/mirador.min.js"></script>
-    <script>
-      (function () {
-        var manifests = JSON.parse(document.getElementById('iiif-manifests').textContent);
-        Mirador.viewer({
-          id: 'iiif-viewer',
-          windows: manifests.map(function (m) { return { manifestId: m }; }),
-          workspaceControlPanel: { enabled: false }
-        });
-      })();
-    </script>
+    {# Self-hosted Mirador bundle (Mirador + the viewer init). #}
+    {% vite_asset 'src/iiif.js' %}
   {% endif %}
 {% endblock %}

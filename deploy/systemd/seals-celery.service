@@ -1,0 +1,30 @@
+[Unit]
+Description=Seals Database - Celery worker
+After=network.target redis.service postgresql.service
+Requires=redis.service
+
+[Service]
+Type=simple
+User=seals
+Group=seals
+WorkingDirectory=/opt/seals-database/backend
+EnvironmentFile=/opt/seals-database/backend/.env
+
+ExecStart=/opt/seals-database/venv/bin/celery -A core worker \
+    --loglevel=info \
+    --logfile=/var/log/seals/celery.log
+
+Restart=on-failure
+RestartSec=5
+KillSignal=SIGTERM
+TimeoutStopSec=60
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/seals-database/backend /var/log/seals
+
+[Install]
+WantedBy=multi-user.target
