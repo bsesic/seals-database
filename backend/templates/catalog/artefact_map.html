@@ -12,7 +12,7 @@
 
   <div id="map" class="border rounded" style="height: 70vh; min-height: 420px;"></div>
   <p class="small text-muted mt-2">
-    {% trans "Markers show find spots with published objects; size reflects the number of objects. Map data © OpenStreetMap contributors." %}
+    {% trans "Find spots with published objects; marker size reflects the number of objects. Nearby find spots are clustered — use the layer control to switch to a density heatmap. Map data © OpenStreetMap contributors." %}
   </p>
 
   {{ findspots|json_script:"findspots-data" }}
