@@ -39,6 +39,15 @@
     <div class="col">
       <div class="card h-100">
         <div class="card-body">
+          <h2 class="h5 card-title">{% trans "Statistics" %}</h2>
+          <p class="card-text text-muted small">{% trans "See the distribution of the survey by category, region, period, script and material." %}</p>
+          <a href="{% url 'catalog:statistics' %}">{% trans "View statistics →" %}</a>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card h-100">
+        <div class="card-body">
           <h2 class="h5 card-title">{% trans "Open data & API" %}</h2>
           <p class="card-text text-muted small">{% trans "The catalogue is available as a public REST API, published as Open Access and Linked Open Data." %}</p>
           <a href="{% url 'swagger-ui' %}">{% trans "API documentation →" %}</a>
