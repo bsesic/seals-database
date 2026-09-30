@@ -349,6 +349,7 @@ HEADLESS_ONLY = False
 SEARCH_BACKEND = env("SEARCH_BACKEND", default="database")
 ELASTICSEARCH_URL = env("ELASTICSEARCH_URL", default="http://127.0.0.1:9200")
 ELASTICSEARCH_INDEX = env("ELASTICSEARCH_INDEX", default="documents")
+ELASTICSEARCH_CATALOG_INDEX = env("ELASTICSEARCH_CATALOG_INDEX", default="catalog-artefacts")
 
 # --- RDF / Linked Open Data (djangordf) ------------------------------------
 # Base URI for minted resource IRIs (dereferenceable — the artefact web URL).
