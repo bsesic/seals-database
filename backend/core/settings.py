@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     "waffle",
     "import_export",
     "actstream",
+    "djangordf",
     # Authentication (allauth)
     "allauth",
     "allauth.account",
@@ -348,6 +349,35 @@ HEADLESS_ONLY = False
 SEARCH_BACKEND = env("SEARCH_BACKEND", default="database")
 ELASTICSEARCH_URL = env("ELASTICSEARCH_URL", default="http://127.0.0.1:9200")
 ELASTICSEARCH_INDEX = env("ELASTICSEARCH_INDEX", default="documents")
+ELASTICSEARCH_CATALOG_INDEX = env("ELASTICSEARCH_CATALOG_INDEX", default="catalog-artefacts")
+
+# --- RDF / Linked Open Data (djangordf) ------------------------------------
+# Base URI for minted resource IRIs (dereferenceable — the artefact web URL).
+RDF_BASE_URI = env("RDF_BASE_URI", default="http://localhost:8000")
+
+# Triple-store backend. Default is an in-memory rdflib store (dev/tests). Set
+# FUSEKI_ENDPOINT (e.g. http://localhost:3030/seals) to sync to Apache Jena
+# Fuseki over SPARQL 1.1, which then provides the public SPARQL endpoint.
+_fuseki_endpoint = env("FUSEKI_ENDPOINT", default="")
+if _fuseki_endpoint:
+    DJANGORDF_BACKEND = {
+        "class": "djangordf.backends.fuseki.FusekiBackend",
+        "endpoint": _fuseki_endpoint,
+    }
+    if env("FUSEKI_USER", default=""):
+        DJANGORDF_BACKEND["user"] = env("FUSEKI_USER")
+        DJANGORDF_BACKEND["password"] = env("FUSEKI_PASSWORD", default="")
+else:
+    DJANGORDF_BACKEND = {"class": "djangordf.backends.memory.InMemoryBackend"}
+
+DJANGORDF_DEFAULT_NAMESPACE = RDF_BASE_URI.rstrip("/") + "/id/"
+DJANGORDF_DEFAULT_GRAPH = RDF_BASE_URI.rstrip("/") + "/graph/catalog"
+DJANGORDF_NAMESPACES = {
+    "crm": "http://www.cidoc-crm.org/cidoc-crm/",
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "dcterms": "http://purl.org/dc/terms/",
+    "geo": "http://www.w3.org/2003/01/geo/wgs84_pos#",
+}
 
 # --- Activity stream -------------------------------------------------------
 ACTSTREAM_SETTINGS = {
