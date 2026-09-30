@@ -169,6 +169,9 @@
 
       <p class="small text-muted mt-3">
         {% trans "Permalink" %}: <code>{{ artefact.uuid }}</code><br>
+        {% trans "Linked data" %}:
+        <a href="{% url 'catalog:artefact-rdf' artefact.slug %}">RDF</a> ·
+        <a href="{% url 'catalog:artefact-rdf' artefact.slug %}?format=jsonld">JSON-LD</a><br>
         {% blocktrans with when=artefact.updated_at|date %}Last updated {{ when }}{% endblocktrans %}
       </p>
     </div>

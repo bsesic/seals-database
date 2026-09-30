@@ -6,10 +6,14 @@ the admin. Drafts (``is_published=False``) are hidden from the public list/detai
 """
 
 from django.db.models import Count, F, Q
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.translation import gettext as _
+from django.views import View
 from django.views.generic import DetailView, ListView, TemplateView
 
+from catalog import rdf_sync
 from catalog.models import Artefact, Findspot, ObjectCategory
 from catalog.search import search_artefacts
 
@@ -263,3 +267,25 @@ class StatisticsView(TemplateView):
             "findspot": pack(top_findspots),
         }
         return ctx
+
+
+class ArtefactRDFView(View):
+    """RDF (Turtle / JSON-LD / RDF-XML / N-Triples) for one published artefact.
+
+    Makes the artefact IRI dereferenceable for Linked Open Data clients.
+    """
+
+    def get(self, request, slug):
+        artefact = get_object_or_404(Artefact.objects.filter(is_published=True), slug=slug)
+        rdf_format, content_type = rdf_sync.negotiate_format(request)
+        graph = rdf_sync.graph_for_artefact(artefact)
+        return HttpResponse(graph.serialize(format=rdf_format), content_type=content_type)
+
+
+class DatasetRDFView(View):
+    """RDF dump of the whole published catalogue."""
+
+    def get(self, request):
+        rdf_format, content_type = rdf_sync.negotiate_format(request)
+        graph = rdf_sync.graph_for_dataset()
+        return HttpResponse(graph.serialize(format=rdf_format), content_type=content_type)

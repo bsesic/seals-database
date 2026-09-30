@@ -43,6 +43,24 @@ python manage.py sync_rdf
 The sync is idempotent — stable IRIs mean re-running overwrites rather than
 duplicates. Run it after data entry (or on a schedule / from `deploy.sh`).
 
+## HTTP access (content negotiation)
+
+Django serves RDF directly, so artefact IRIs are dereferenceable:
+
+- `GET /catalog/<slug>/rdf/` — one artefact
+- `GET /catalog/rdf/` — the whole published catalogue
+
+Pick a format with `?format=turtle|jsonld|xml|nt` or the `Accept` header
+(`text/turtle`, `application/ld+json`, `application/rdf+xml`,
+`application/n-triples`); Turtle is the default. These responses are built
+in memory from the mapping and do not require a triple store.
+
+## Scheduled sync
+
+`catalog.tasks.sync_rdf_task` (Celery) syncs and prunes; wire it to Celery beat
+for a nightly refresh (see the task docstring). `manage.py sync_rdf --prune`
+also removes artefacts that are no longer published.
+
 ## Running Fuseki
 
 The production compose file (`deploy/docker-compose.prod.yml`) includes an
@@ -60,6 +78,5 @@ SELECT ?artefact ?title WHERE {
 
 ## Not yet done
 
-- Serve content-negotiated RDF (Turtle/JSON-LD) directly from Django views.
-- Scheduled sync + removal of unpublished/deleted records from the store.
 - A richer inscription model (separate `crm:E34_Inscription` resources).
+- Live verification against a running Fuseki instance.
