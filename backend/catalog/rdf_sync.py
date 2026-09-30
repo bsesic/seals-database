@@ -4,15 +4,25 @@ The relational models are the source of truth; this maps published artefacts
 (and the vocabulary terms, places and periods they reference) onto the RDF
 models with stable, dereferenceable IRIs, so re-running the sync overwrites
 rather than duplicates triples.
+
+The same builders serve two purposes:
+
+* ``sync_*`` — persist to the configured triple store (idempotent).
+* ``graph_for_*`` — build an rdflib ``Graph`` in memory (``save=False``) for
+  content-negotiated RDF responses, without touching the store.
 """
 
 from django.conf import settings
 from djangordf import LangString
-from rdflib import URIRef
+from rdflib import Graph, Namespace, URIRef
+from rdflib.namespace import DCTERMS, FOAF, RDFS, SKOS
 
 from catalog.models import Artefact
 from catalog.rdf_models import Artefact as RDFArtefact
 from catalog.rdf_models import Concept, Period, Place
+
+CRM = Namespace("http://www.cidoc-crm.org/cidoc-crm/")
+GEO = Namespace("http://www.w3.org/2003/01/geo/wgs84_pos#")
 
 
 def _base():
@@ -24,7 +34,7 @@ def _gyear(year):
     return f"-{abs(year):04d}" if year < 0 else f"{year:04d}"
 
 
-def _concept(cache, kind, term):
+def _concept(cache, kind, term, save=True):
     iri = f"{_base()}/id/{kind}/{term.pk}"
     if iri in cache:
         return cache[iri]
@@ -33,13 +43,14 @@ def _concept(cache, kind, term):
         concept.exact_match = [URIRef(term.skos_uri)]
     parent = getattr(term, "broader", None) or getattr(term, "parent", None)
     if parent:
-        concept.broader = [_concept(cache, kind, parent)]
-    concept.save()
+        concept.broader = [_concept(cache, kind, parent, save)]
+    if save:
+        concept.save()
     cache[iri] = concept
     return concept
 
 
-def _place(cache, findspot):
+def _place(cache, findspot, save=True):
     iri = f"{_base()}/id/findspot/{findspot.pk}"
     if iri in cache:
         return cache[iri]
@@ -53,12 +64,13 @@ def _place(cache, findspot):
         place.long = str(findspot.longitude)
     if findspot.gazetteer_uri:
         place.exact_match = [URIRef(findspot.gazetteer_uri)]
-    place.save()
+    if save:
+        place.save()
     cache[iri] = place
     return place
 
 
-def _period(cache, period):
+def _period(cache, period, save=True):
     iri = f"{_base()}/id/period/{period.pk}"
     if iri in cache:
         return cache[iri]
@@ -69,17 +81,24 @@ def _period(cache, period):
         rdf_period.end = _gyear(period.end_year)
     if period.skos_uri:
         rdf_period.exact_match = [URIRef(period.skos_uri)]
-    rdf_period.save()
+    if save:
+        rdf_period.save()
     cache[iri] = rdf_period
     return rdf_period
 
 
-def sync_artefact(artefact, cache=None):
-    """Create or overwrite the RDF representation of one artefact."""
-    cache = {} if cache is None else cache
-    iri = f"{_base()}{artefact.get_absolute_url()}"
+def artefact_iri(artefact):
+    return f"{_base()}{artefact.get_absolute_url()}"
+
+
+def build_artefact(artefact, cache, save=True):
+    """Build (and optionally persist) the RDF representation of one artefact.
+
+    Returns the RDFArtefact instance; ``cache`` collects the referenced
+    Concept / Place / Period instances so a caller can serialize them too.
+    """
     ra = RDFArtefact(
-        iri=iri,
+        iri=artefact_iri(artefact),
         label=artefact.title,
         title=artefact.title,
         category=artefact.get_category_display(),
@@ -95,19 +114,22 @@ def sync_artefact(artefact, cache=None):
         ra.identifier = identifiers
 
     if artefact.object_type:
-        ra.has_type = _concept(cache, "object-type", artefact.object_type)
-    materials = [_concept(cache, "material", m) for m in artefact.materials.all()]
+        ra.has_type = _concept(cache, "object-type", artefact.object_type, save)
+    materials = [_concept(cache, "material", m, save) for m in artefact.materials.all()]
     if materials:
         ra.consists_of = materials
-    motifs = [_concept(cache, "motif", m) for m in artefact.iconographic_features.all()]
+    motifs = [
+        _concept(cache, "motif", m, save)
+        for m in artefact.iconographic_features.all()
+    ]
     if motifs:
         ra.subject = motifs
     if artefact.region:
-        ra.spatial = _concept(cache, "region", artefact.region)
+        ra.spatial = _concept(cache, "region", artefact.region, save)
     if artefact.findspot:
-        ra.location = _place(cache, artefact.findspot)
+        ra.location = _place(cache, artefact.findspot, save)
     if artefact.period:
-        ra.temporal = _period(cache, artefact.period)
+        ra.temporal = _period(cache, artefact.period, save)
 
     contents = [
         r.reading_normalized
@@ -129,8 +151,14 @@ def sync_artefact(artefact, cache=None):
     if representation:
         ra.representation = representation
 
-    ra.save()
+    if save:
+        ra.save()
     return ra
+
+
+def sync_artefact(artefact, cache=None):
+    """Create or overwrite the RDF representation of one artefact in the store."""
+    return build_artefact(artefact, {} if cache is None else cache, save=True)
 
 
 def _published_queryset():
@@ -149,6 +177,78 @@ def sync_all():
     cache = {}
     count = 0
     for artefact in _published_queryset():
-        sync_artefact(artefact, cache)
+        build_artefact(artefact, cache, save=True)
         count += 1
     return count
+
+
+def prune_stale():
+    """Remove RDF artefacts whose Django source is no longer published/present.
+
+    Returns the number of artefact resources deleted. Shared vocabulary
+    concepts are kept (they are stable and harmless if unreferenced).
+    """
+    expected = {artefact_iri(a) for a in Artefact.objects.filter(is_published=True)}
+    deleted = 0
+    for existing in RDFArtefact.objects.all():
+        if str(existing.iri) not in expected:
+            existing.delete()
+            deleted += 1
+    return deleted
+
+
+# --- In-memory graph building (for content-negotiated RDF responses) -------
+def _bind_prefixes(g):
+    g.bind("crm", CRM)
+    g.bind("skos", SKOS)
+    g.bind("dcterms", DCTERMS)
+    g.bind("geo", GEO)
+    g.bind("foaf", FOAF)
+    g.bind("rdfs", RDFS)
+
+
+def _graph_from(instances):
+    g = Graph()
+    _bind_prefixes(g)
+    for obj in instances:
+        for triple in obj._to_triples():
+            g.add(triple)
+    return g
+
+
+def graph_for_artefact(artefact):
+    cache = {}
+    ra = build_artefact(artefact, cache, save=False)
+    return _graph_from(list(cache.values()) + [ra])
+
+
+def graph_for_dataset(artefacts=None):
+    if artefacts is None:
+        artefacts = _published_queryset()
+    cache = {}
+    artefact_instances = [build_artefact(a, cache, save=False) for a in artefacts]
+    return _graph_from(list(cache.values()) + artefact_instances)
+
+
+# Serialization format -> (rdflib format, content type).
+RDF_FORMATS = {
+    "turtle": ("turtle", "text/turtle"),
+    "ttl": ("turtle", "text/turtle"),
+    "jsonld": ("json-ld", "application/ld+json"),
+    "json-ld": ("json-ld", "application/ld+json"),
+    "xml": ("xml", "application/rdf+xml"),
+    "rdf": ("xml", "application/rdf+xml"),
+    "nt": ("nt", "application/n-triples"),
+}
+
+
+def negotiate_format(request):
+    """Pick an RDF format from ?format= or the Accept header (default turtle)."""
+    requested = request.GET.get("format", "").lower()
+    if requested in RDF_FORMATS:
+        return RDF_FORMATS[requested]
+    accept = request.META.get("HTTP_ACCEPT", "")
+    for key, spec in RDF_FORMATS.items():
+        if spec[1] in accept:
+            return spec
+    return RDF_FORMATS["turtle"]
