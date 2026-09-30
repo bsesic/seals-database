@@ -19,7 +19,7 @@ from rdflib.namespace import DCTERMS, FOAF, RDFS, SKOS
 
 from catalog.models import Artefact
 from catalog.rdf_models import Artefact as RDFArtefact
-from catalog.rdf_models import Concept, Period, Place
+from catalog.rdf_models import Concept, Inscription, Period, Place, Reading
 
 CRM = Namespace("http://www.cidoc-crm.org/cidoc-crm/")
 GEO = Namespace("http://www.w3.org/2003/01/geo/wgs84_pos#")
@@ -87,6 +87,46 @@ def _period(cache, period, save=True):
     return rdf_period
 
 
+def _inscription(cache, artefact_iri_str, ins, save=True):
+    iri = f"{artefact_iri_str}/inscription/{ins.pk}"
+    if iri in cache:
+        return cache[iri]
+    rins = Inscription(iri=iri)
+    if ins.script:
+        rins.script = ins.script.label
+    if ins.language:
+        rins.language = ins.language.label
+    readings = []
+    preferred = None
+    for r in ins.readings.all():
+        r_iri = f"{iri}/reading/{r.pk}"
+        rr = Reading(iri=r_iri)
+        if r.reading_normalized:
+            rr.content = r.reading_normalized
+        if r.transliteration:
+            rr.transliteration = r.transliteration
+        if r.translation_en:
+            rr.translation = [LangString(r.translation_en, "en")]
+        note = f"certainty: {r.get_certainty_display()}"
+        if r.is_preferred:
+            note += " (preferred)"
+        rr.certainty = note
+        if save:
+            rr.save()
+        cache[r_iri] = rr
+        readings.append(rr)
+        if r.reading_normalized and (r.is_preferred or preferred is None):
+            preferred = r.reading_normalized
+    if readings:
+        rins.has_reading = readings
+    if preferred:
+        rins.content = preferred
+    if save:
+        rins.save()
+    cache[iri] = rins
+    return rins
+
+
 def artefact_iri(artefact):
     return f"{_base()}{artefact.get_absolute_url()}"
 
@@ -131,14 +171,12 @@ def build_artefact(artefact, cache, save=True):
     if artefact.period:
         ra.temporal = _period(cache, artefact.period, save)
 
-    contents = [
-        r.reading_normalized
+    inscriptions = [
+        _inscription(cache, ra.iri, ins, save)
         for ins in artefact.inscriptions.all()
-        for r in ins.readings.all()
-        if r.reading_normalized
     ]
-    if contents:
-        ra.symbolic_content = contents
+    if inscriptions:
+        ra.carries = inscriptions
 
     depiction, representation = [], []
     for media in artefact.media.all():
@@ -167,7 +205,7 @@ def _published_queryset():
         .select_related("object_type", "region", "period", "findspot")
         .prefetch_related(
             "identifiers", "materials", "iconographic_features", "media",
-            "inscriptions__readings",
+            "inscriptions__script", "inscriptions__language", "inscriptions__readings",
         )
     )
 
