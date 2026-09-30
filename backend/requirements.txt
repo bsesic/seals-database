@@ -29,6 +29,8 @@ django-import-export>=4.0
 django-fsm-2>=4.0
 django-activity-stream>=2.0
 elasticsearch>=8,<9  # opt-in search backend; only used when SEARCH_BACKEND=elasticsearch
+djangordf>=1.0  # RDF/LOD model layer + triple-store (Apache Jena Fuseki) sync
+rdflib>=7.0  # RDF primitives used directly in the catalogue RDF models
 
 # Security & compliance (Phase 7)
 django-ratelimit>=4.1
