@@ -229,3 +229,53 @@ class ArtefactDetailSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         url = obj.get_absolute_url()
         return request.build_absolute_uri(url) if request else url
+
+
+class ArtefactWriteSerializer(serializers.ModelSerializer):
+    """Writable representation for creating and editing artefacts via the API.
+
+    Foreign keys and many-to-many relations are written by id; ``tags`` is a
+    list of names. ``organization`` and ``created_by`` are set by the view, not
+    the client. Nested children (inscriptions, media, measurements) are managed
+    through the admin for now.
+    """
+
+    # write_only: tags are written from a list of names and rendered back in
+    # to_representation (the model attribute is a TaggableManager, not a list).
+    tags = serializers.ListField(
+        child=serializers.CharField(), required=False, write_only=True,
+        help_text="List of tag names.",
+    )
+
+    class Meta:
+        model = Artefact
+        fields = (
+            "uuid", "slug", "title", "category", "object_type", "findspot",
+            "find_context", "region", "repository", "period", "dating_text",
+            "ruler", "origin_region", "origin_note", "is_inscribed",
+            "has_iconography", "is_published", "condition", "preservation_note",
+            "materials", "iconographic_features", "description", "notes",
+            "tags", "created_at", "updated_at",
+        )
+        read_only_fields = ("uuid", "slug", "created_at", "updated_at")
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data["tags"] = [t.name for t in instance.tags.all()]
+        return data
+
+    def _save_tags(self, instance, tags):
+        if tags is not None:
+            instance.tags.set(tags, clear=True)
+
+    def create(self, validated_data):
+        tags = validated_data.pop("tags", None)
+        instance = super().create(validated_data)
+        self._save_tags(instance, tags)
+        return instance
+
+    def update(self, instance, validated_data):
+        tags = validated_data.pop("tags", None)
+        instance = super().update(instance, validated_data)
+        self._save_tags(instance, tags)
+        return instance
