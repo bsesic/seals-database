@@ -9,7 +9,12 @@ from django.db.models import Count, Q
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from rest_framework import viewsets
-from rest_framework.permissions import AllowAny
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.permissions import (
+    SAFE_METHODS,
+    AllowAny,
+    IsAuthenticatedOrReadOnly,
+)
 
 from catalog.models import (
     Artefact,
@@ -24,6 +29,7 @@ from catalog.search import search_artefacts
 from catalog.serializers import (
     ArtefactDetailSerializer,
     ArtefactListSerializer,
+    ArtefactWriteSerializer,
     FindspotSerializer,
     MaterialSerializer,
     ObjectTypeSerializer,
@@ -31,6 +37,14 @@ from catalog.serializers import (
     RegionSerializer,
     ScriptTypeSerializer,
 )
+
+
+def current_organization(request):
+    """Resolve the active org for both session (middleware) and token clients."""
+    org = getattr(request, "organization", None)
+    if org is None and request.user.is_authenticated:
+        org = request.user.organizations.first()
+    return org
 
 
 class PublicReadOnlyViewSet(viewsets.ReadOnlyModelViewSet):
@@ -68,17 +82,30 @@ _ARTEFACT_FILTERS = {
         ]
     )
 )
-class ArtefactViewSet(PublicReadOnlyViewSet):
-    """Published artefacts. `retrieve` is by slug."""
+class ArtefactViewSet(viewsets.ModelViewSet):
+    """Artefacts. Reads are public (published only); writes require
+    authentication and are scoped to the user's organization. `retrieve` and
+    write lookups are by slug."""
 
     lookup_field = "slug"
+    permission_classes = [IsAuthenticatedOrReadOnly]
 
     def get_serializer_class(self):
+        if self.action in ("create", "update", "partial_update"):
+            return ArtefactWriteSerializer
         if self.action == "retrieve":
             return ArtefactDetailSerializer
         return ArtefactListSerializer
 
     def get_queryset(self):
+        # Write lookups (update/delete) resolve against the user's own
+        # organization, including drafts; reads stay public and published.
+        if self.request.method not in SAFE_METHODS:
+            org = current_organization(self.request)
+            if org is None:
+                return Artefact.objects.none()
+            return Artefact.objects.filter(organization=org)
+
         qs = Artefact.objects.filter(is_published=True)
         params = self.request.query_params
 
@@ -104,6 +131,12 @@ class ArtefactViewSet(PublicReadOnlyViewSet):
         if params.get("q", "").strip():
             return qs.order_by("-rank", "-updated_at")
         return qs.order_by("-updated_at")
+
+    def perform_create(self, serializer):
+        org = current_organization(self.request)
+        if org is None:
+            raise PermissionDenied("The current user has no organization.")
+        serializer.save(organization=org, created_by=self.request.user)
 
 
 class FindspotViewSet(PublicReadOnlyViewSet):
