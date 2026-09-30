@@ -25,6 +25,17 @@ services:
     image: redis:7-alpine
     restart: unless-stopped
 
+  # RDF triple store / SPARQL endpoint (opt-in). To use it, set
+  # FUSEKI_ENDPOINT=http://fuseki:3030/seals (and FUSEKI_PASSWORD) in
+  # backend/.env, create the "seals" dataset, then run `manage.py sync_rdf`.
+  fuseki:
+    image: stain/jena-fuseki:latest
+    restart: unless-stopped
+    environment:
+      ADMIN_PASSWORD: ${FUSEKI_PASSWORD:-changeme}
+    volumes:
+      - fuseki_data:/fuseki
+
   web:
     # CI/CD pulls the prebuilt image (SEALS_IMAGE set by the deploy workflow).
     # Locally it falls back to building from ../backend.
@@ -73,3 +84,4 @@ volumes:
   postgres_data:
   static_data:
   media_data:
+  fuseki_data:
