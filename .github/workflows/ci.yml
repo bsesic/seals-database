@@ -28,6 +28,7 @@ jobs:
   lint-and-test:
     name: Lint and test
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     services:
       postgres:
