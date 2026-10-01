@@ -193,5 +193,5 @@ foundation, then pull reusable pieces back after each iteration.
 
 - **Branches**: `main` = releases + deploy; `development` = active dev; `feature/*`, `bugfix/*` for work. No auto-generated branch names.
 - **Before every commit**: run tests + `flake8`. Commit only when green.
-- **Commits/PRs/issues/comments**: English. No AI/Claude attribution anywhere.
+- **Commits/PRs/issues/comments**: English. No AI attribution anywhere.
 - **Issues**: every roadmap item is a GitHub issue (`phase-N` label); close on merge.
