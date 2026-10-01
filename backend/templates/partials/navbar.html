@@ -38,6 +38,16 @@
                   </li>
                 {% endfor %}
                 <li>
+                  <a class="dropdown-item" href="{% url 'catalog:artefact-mine' %}">
+                    {% trans "My finds" %}
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'catalog:artefact-create' %}">
+                    {% trans "Add find" %}
+                  </a>
+                </li>
+                <li>
                   <a class="dropdown-item" href="{% url 'documents:list' %}">
                     {% trans "Documents" %}
                   </a>
