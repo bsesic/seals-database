@@ -5,6 +5,7 @@ Single monolithic settings module driven by environment variables (django-enviro
 Production hardening lives in the ``if not DEBUG:`` block at the bottom.
 """
 
+import sys
 from pathlib import Path
 
 import environ
@@ -160,7 +161,9 @@ LOGOUT_REDIRECT_URL = "/"
 
 ACCOUNT_LOGIN_METHODS = {"username", "email"}
 ACCOUNT_SIGNUP_FIELDS = ["username*", "email*", "password1*", "password2*"]
-ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+# "mandatory" (default), "optional" or "none". Relax to "none"/"optional" for a
+# single-user / internal deployment or before an SMTP relay is configured.
+ACCOUNT_EMAIL_VERIFICATION = env("ACCOUNT_EMAIL_VERIFICATION", default="mandatory")
 ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
 ACCOUNT_LOGIN_ON_PASSWORD_RESET = True
@@ -399,6 +402,12 @@ CELERY_BROKER_URL = env(
 CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", default=CELERY_BROKER_URL)
 CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER", default=False)
 CELERY_TASK_EAGER_PROPAGATES = True
+# Run tasks synchronously under pytest so the suite never blocks on a broker/
+# worker (config_from_object reads these at app finalize, which would otherwise
+# reset a per-test override back to the env default).
+if "pytest" in sys.modules:
+    CELERY_TASK_ALWAYS_EAGER = True
+    CELERY_TASK_EAGER_PROPAGATES = True
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_ACCEPT_CONTENT = ["json"]

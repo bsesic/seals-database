@@ -17,6 +17,8 @@ Core Terms and WGS84:
 | `Concept`  | `skos:Concept` | object types, materials, motifs, regions |
 | `Place`    | `crm:E53_Place` | find spots (with `geo:lat`/`geo:long`) |
 | `Period`   | `crm:E4_Period` | periods (with `crm:P82a/P82b` begin/end) |
+| `Inscription` | `crm:E34_Inscription` | inscriptions (`crm:P128_carries` from the artefact) |
+| `Reading`  | `crm:E33_Linguistic_Object` | readings (`dcterms:hasVersion` from the inscription) |
 
 Vocabulary terms carry `skos:exactMatch` to their external `skos_uri`, so terms
 can be aligned with the CSSL corpus and other LOD sources.
@@ -78,5 +80,4 @@ SELECT ?artefact ?title WHERE {
 
 ## Not yet done
 
-- A richer inscription model (separate `crm:E34_Inscription` resources).
 - Live verification against a running Fuseki instance.

@@ -5,17 +5,29 @@ catalogue is public: anyone can browse published artefacts. Editing happens in
 the admin. Drafts (``is_published=False``) are hidden from the public list/detail.
 """
 
+from django.db import transaction
 from django.db.models import Count, F, Q
 from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django.utils.translation import gettext as _
 from django.views import View
-from django.views.generic import DetailView, ListView, TemplateView
+from django.views.generic import (
+    CreateView,
+    DetailView,
+    ListView,
+    TemplateView,
+    UpdateView,
+)
 
 from catalog import rdf_sync
+from catalog.forms import ArtefactForm, MediaItemFormSet
 from catalog.models import Artefact, Findspot, ObjectCategory
 from catalog.search import search_artefacts
+from organizations.mixins import (
+    CurrentOrganizationRequiredMixin,
+    OrgScopedQuerysetMixin,
+)
 
 
 class ArtefactListView(ListView):
@@ -289,3 +301,75 @@ class DatasetRDFView(View):
         rdf_format, content_type = rdf_sync.negotiate_format(request)
         graph = rdf_sync.graph_for_dataset()
         return HttpResponse(graph.serialize(format=rdf_format), content_type=content_type)
+
+
+class MyArtefactListView(CurrentOrganizationRequiredMixin, ListView):
+    """The current organization's artefacts (all statuses) — the entry desk."""
+
+    template_name = "catalog/artefact_mine.html"
+    context_object_name = "artefacts"
+    paginate_by = 30
+
+    def get_queryset(self):
+        return (
+            Artefact.objects.filter(organization=self.request.organization)
+            .select_related("object_type", "region", "period")
+            .order_by("-updated_at")
+        )
+
+
+class ArtefactCreateView(CurrentOrganizationRequiredMixin, OrgScopedQuerysetMixin, CreateView):
+    """Add a new find with metadata and images (login + organization required)."""
+
+    model = Artefact
+    form_class = ArtefactForm
+    template_name = "catalog/artefact_form.html"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx.setdefault(
+            "formset", MediaItemFormSet(self.request.POST or None, self.request.FILES or None)
+        )
+        ctx["heading"] = _("Add find")
+        return ctx
+
+    def post(self, request, *args, **kwargs):
+        self.object = None
+        form = self.get_form()
+        formset = MediaItemFormSet(request.POST, request.FILES)
+        if form.is_valid() and formset.is_valid():
+            with transaction.atomic():
+                form.instance.organization = request.organization
+                form.instance.created_by = request.user
+                self.object = form.save()
+                formset.instance = self.object
+                formset.save()
+            return redirect(self.object.get_absolute_url())
+        return self.render_to_response(self.get_context_data(form=form, formset=formset))
+
+
+class ArtefactUpdateView(CurrentOrganizationRequiredMixin, OrgScopedQuerysetMixin, UpdateView):
+    """Edit one of the current organization's finds, including its images."""
+
+    model = Artefact
+    form_class = ArtefactForm
+    template_name = "catalog/artefact_form.html"
+    slug_field = "slug"
+    slug_url_kwarg = "slug"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx.setdefault("formset", MediaItemFormSet(instance=self.object))
+        ctx["heading"] = _("Edit find")
+        return ctx
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        form = self.get_form()
+        formset = MediaItemFormSet(request.POST, request.FILES, instance=self.object)
+        if form.is_valid() and formset.is_valid():
+            with transaction.atomic():
+                form.save()
+                formset.save()
+            return redirect(self.object.get_absolute_url())
+        return self.render_to_response(self.get_context_data(form=form, formset=formset))

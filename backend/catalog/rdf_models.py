@@ -83,10 +83,8 @@ class Artefact(RDFModel):
         "Place", predicate=CRM["P53_has_former_or_current_location"]
     )
     temporal = ObjectProperty("Period", predicate=DCTERMS.temporal)
+    carries = ObjectProperty("Inscription", predicate=CRM["P128_carries"], many=True)
 
-    symbolic_content = DataProperty(
-        predicate=CRM["P190_has_symbolic_content"], many=True
-    )
     depiction = URIProperty(predicate=FOAF.depiction, many=True)
     representation = URIProperty(
         predicate=CRM["P138i_has_representation"], many=True
@@ -94,3 +92,28 @@ class Artefact(RDFModel):
 
     class Meta:
         class_iri = "crm:E22_Human-Made_Object"
+
+
+class Inscription(RDFModel):
+    """An inscription carried by an artefact (crm:E34_Inscription)."""
+
+    script = DataProperty(predicate=DCTERMS.type)
+    language = DataProperty(predicate=DCTERMS.language)
+    # Symbolic content of the preferred reading (convenience for simple queries).
+    content = DataProperty(predicate=CRM["P190_has_symbolic_content"])
+    has_reading = ObjectProperty("Reading", predicate=DCTERMS.hasVersion, many=True)
+
+    class Meta:
+        class_iri = "crm:E34_Inscription"
+
+
+class Reading(RDFModel):
+    """One reading / interpretation of an inscription (crm:E33_Linguistic_Object)."""
+
+    content = DataProperty(predicate=CRM["P190_has_symbolic_content"])
+    transliteration = DataProperty(predicate=DCTERMS.alternative)
+    translation = LangStringProperty(predicate=DCTERMS.description, many=True)
+    certainty = DataProperty(predicate=CRM["P3_has_note"])
+
+    class Meta:
+        class_iri = "crm:E33_Linguistic_Object"
