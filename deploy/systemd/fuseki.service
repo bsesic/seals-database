@@ -1,0 +1,30 @@
+[Unit]
+Description=Apache Jena Fuseki - RDF triple store / SPARQL endpoint
+After=network.target
+
+[Service]
+Type=simple
+User=fuseki
+Group=fuseki
+# FUSEKI_HOME = unpacked distribution; FUSEKI_BASE = runtime config + databases
+# (holds configuration/seals.ttl and databases/seals).
+Environment=FUSEKI_HOME=/opt/fuseki
+Environment=FUSEKI_BASE=/var/lib/fuseki
+Environment=JAVA_OPTIONS=-Xmx1500m
+WorkingDirectory=/opt/fuseki
+ExecStart=/opt/fuseki/fuseki-server --port 3030
+
+Restart=on-failure
+RestartSec=5
+KillSignal=SIGTERM
+TimeoutStopSec=30
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/var/lib/fuseki
+
+[Install]
+WantedBy=multi-user.target
