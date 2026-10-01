@@ -19,9 +19,14 @@
       {% if artefact.object_type %}<span class="badge text-bg-secondary">{{ artefact.object_type.label }}</span>{% endif %}
       {% if artefact.is_inscribed %}<span class="badge text-bg-info">{% trans "Inscribed" %}</span>{% endif %}
     </div>
-    {% if user.is_staff %}
-      <a class="btn btn-sm btn-outline-secondary" href="{% url 'admin:catalog_artefact_change' artefact.pk %}">{% trans "Edit in admin" %}</a>
-    {% endif %}
+    <div class="d-flex gap-2">
+      {% if user.is_authenticated and current_organization and artefact.organization_id == current_organization.id %}
+        <a class="btn btn-sm btn-outline-primary" href="{% url 'catalog:artefact-edit' artefact.slug %}">{% trans "Edit" %}</a>
+      {% endif %}
+      {% if user.is_staff %}
+        <a class="btn btn-sm btn-outline-secondary" href="{% url 'admin:catalog_artefact_change' artefact.pk %}">{% trans "Edit in admin" %}</a>
+      {% endif %}
+    </div>
   </div>
 
   <div class="row g-4">

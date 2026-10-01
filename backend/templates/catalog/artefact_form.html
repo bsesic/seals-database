@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% load i18n crispy_forms_tags %}
+
+{% block title %}{{ heading }}{% endblock %}
+
+{% block content %}
+  <div class="row justify-content-center">
+    <div class="col-lg-9">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h3 mb-0">{{ heading }}</h1>
+        <a class="btn btn-sm btn-outline-secondary" href="{% url 'catalog:artefact-mine' %}">{% trans "My finds" %}</a>
+      </div>
+
+      <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+        {{ form|crispy }}
+
+        <h2 class="h5 mt-4">{% trans "Images" %}</h2>
+        <p class="text-muted small">{% trans "Upload a file or give an image URL; add view, caption and source per image. Leave rows blank to skip them. More can be added when editing." %}</p>
+        {{ formset|crispy }}
+
+        <div class="mt-3">
+          <button class="btn btn-primary" type="submit">{% trans "Save" %}</button>
+          <a class="btn btn-link" href="{% url 'catalog:artefact-mine' %}">{% trans "Cancel" %}</a>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}
