@@ -65,10 +65,28 @@ also removes artefacts that are no longer published.
 
 ## Running Fuseki
 
-The production compose file (`deploy/docker-compose.prod.yml`) includes an
-optional `fuseki` service with a persistent volume. Create a dataset named to
-match `FUSEKI_ENDPOINT`, then run `sync_rdf`. Query it at
-`<FUSEKI_ENDPOINT>/sparql`, e.g.:
+**Docker:** the production compose file (`deploy/docker-compose.prod.yml`)
+includes an optional `fuseki` service with a persistent volume.
+
+**Bare metal:** unpack the Fuseki distribution to `/opt/fuseki` and use
+`deploy/fuseki/seals.ttl` + `deploy/systemd/fuseki.service`:
+
+```bash
+# Java 17+ required (Fuseki 5.x).
+sudo useradd --system --shell /usr/sbin/nologin --home-dir /var/lib/fuseki fuseki
+sudo mkdir -p /var/lib/fuseki/configuration /var/lib/fuseki/databases
+sudo cp deploy/fuseki/seals.ttl /var/lib/fuseki/configuration/seals.ttl
+sudo chown -R fuseki:fuseki /var/lib/fuseki /opt/fuseki
+sudo cp deploy/systemd/fuseki.service /etc/systemd/system/
+sudo systemctl daemon-reload && sudo systemctl enable --now fuseki
+curl -s http://127.0.0.1:3030/\$/ping && echo
+```
+
+Either way the dataset name must match `FUSEKI_ENDPOINT` (default `seals`) and
+**must be writable** — a query-only service makes `/seals/update` return HTTP
+405 and the sync fails. Keep port 3030 bound to localhost (the app connects
+locally); expose only the read-only `…/sparql` path publicly, never `/update`
+or `/$/`. Then run `sync_rdf` and query at `<FUSEKI_ENDPOINT>/sparql`, e.g.:
 
 ```sparql
 PREFIX crm: <http://www.cidoc-crm.org/cidoc-crm/>
@@ -80,4 +98,4 @@ SELECT ?artefact ?title WHERE {
 
 ## Not yet done
 
-- Live verification against a running Fuseki instance.
+- Scheduled push to Fuseki in production (wire `sync_rdf_task` to Celery beat).
