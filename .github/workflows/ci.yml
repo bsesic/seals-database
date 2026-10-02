@@ -10,11 +10,10 @@ on:
       - 'docs/**'
   pull_request:
     branches: [main, development]
-    paths-ignore:
-      - '**.md'
-      - '.gitignore'
-      - 'LICENSE*'
-      - 'docs/**'
+    # No paths-ignore here on purpose: the "Lint and test" job is a required
+    # status check, so it must run (and report) on every PR. Skipping it for
+    # docs-only changes would leave the required check pending forever and
+    # block the PR. Direct pushes keep the paths-ignore filter above.
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
