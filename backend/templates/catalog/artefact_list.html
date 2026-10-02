@@ -9,6 +9,16 @@
     <h1 class="h3 mb-0">{% trans "Catalogue" %}</h1>
     <div class="d-flex align-items-center gap-3">
       <span class="text-muted small">{{ page_obj.paginator.count }} {% trans "objects" %}</span>
+      <form method="get" class="d-flex align-items-center gap-1 m-0">
+        {% for key, value in carry_items %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endfor %}
+        <label for="per_page" class="text-muted small mb-0">{% trans "Per page" %}</label>
+        <select id="per_page" name="per_page" class="form-select form-select-sm w-auto"
+                onchange="this.form.submit()">
+          {% for choice in per_page_choices %}
+            <option value="{{ choice }}" {% if choice == per_page %}selected{% endif %}>{{ choice }}</option>
+          {% endfor %}
+        </select>
+      </form>
       <a class="btn btn-sm btn-outline-secondary" href="{% url 'catalog:artefact-map' %}">{% trans "Map" %}</a>
       <a class="btn btn-sm btn-outline-secondary" href="{% url 'catalog:statistics' %}">{% trans "Statistics" %}</a>
     </div>
@@ -27,6 +37,7 @@
       <form method="get">
         {# Preserve an active find-spot filter (driven from the map) across facet changes. #}
         {% for fs in active.findspot %}<input type="hidden" name="findspot" value="{{ fs }}">{% endfor %}
+        {% if per_page != 24 %}<input type="hidden" name="per_page" value="{{ per_page }}">{% endif %}
 
         <div class="input-group mb-3">
           <input type="search" name="q" value="{{ query }}" class="form-control form-control-sm"

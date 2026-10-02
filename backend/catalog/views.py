@@ -35,6 +35,15 @@ class ArtefactListView(ListView):
     template_name = "catalog/artefact_list.html"
     context_object_name = "artefacts"
     paginate_by = 24
+    PER_PAGE_CHOICES = (12, 24, 48, 96)
+
+    def get_paginate_by(self, queryset):
+        """Page size from ``?per_page=``, limited to an allow-list."""
+        try:
+            value = int(self.request.GET.get("per_page", self.paginate_by))
+        except (TypeError, ValueError):
+            return self.paginate_by
+        return value if value in self.PER_PAGE_CHOICES else self.paginate_by
 
     # Multi-select facets. Each maps a query param to the ORM lookup it filters.
     FACETS = {
@@ -140,6 +149,15 @@ class ArtefactListView(ListView):
         carry = params.copy()
         carry.pop("page", None)
         ctx["querystring"] = carry.urlencode()
+        # Page-size selector.
+        ctx["per_page"] = self.get_paginate_by(None)
+        ctx["per_page_choices"] = self.PER_PAGE_CHOICES
+        ctx["carry_items"] = [
+            (key, value)
+            for key in params
+            if key not in ("page", "per_page")
+            for value in params.getlist(key)
+        ]
         return ctx
 
 
