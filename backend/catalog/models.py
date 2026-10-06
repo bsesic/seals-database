@@ -29,11 +29,27 @@ from taggit.managers import TaggableManager
 
 from organizations.models import OrganizationOwnedModel
 
+from core.uuids import uuid7
+
 
 # ---------------------------------------------------------------------------
 # Abstract bases
 # ---------------------------------------------------------------------------
-class TimeStampedModel(models.Model):
+class UUIDPrimaryKeyModel(models.Model):
+    """Time-ordered UUIDv7 primary key.
+
+    Every catalogue record is keyed by a UUIDv7 rather than a sequential
+    integer: the keys sort by creation time (index-friendly) and are safe to
+    expose, so they can back stable public resource IRIs (see ``core.uuids``).
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+
+    class Meta:
+        abstract = True
+
+
+class TimeStampedModel(UUIDPrimaryKeyModel):
     """Audit columns: who created it and when it changed."""
 
     created_by = models.ForeignKey(
@@ -400,7 +416,7 @@ class Artefact(OrganizationOwnedModel, TimeStampedModel):
         return self.media.filter(is_primary=True).first() or self.media.first()
 
 
-class Identifier(models.Model):
+class Identifier(UUIDPrimaryKeyModel):
     """Inventory / catalogue numbers; an artefact can carry several schemes."""
 
     artefact = models.ForeignKey(
@@ -419,7 +435,7 @@ class Identifier(models.Model):
         return f"{self.scheme}: {self.value}"
 
 
-class Measurement(models.Model):
+class Measurement(UUIDPrimaryKeyModel):
     """A single measured dimension. Multiple per artefact; sources may disagree."""
 
     class Kind(models.TextChoices):
@@ -445,7 +461,7 @@ class Measurement(models.Model):
         return f"{self.get_kind_display()}: {self.value} {self.unit}"
 
 
-class MaterialAnalysis(models.Model):
+class MaterialAnalysis(UUIDPrimaryKeyModel):
     """Scientific material analysis (chemical composition, provenance)."""
 
     artefact = models.ForeignKey(
@@ -467,7 +483,7 @@ class MaterialAnalysis(models.Model):
         return f"{self.method} ({self.artefact})"
 
 
-class MediaItem(models.Model):
+class MediaItem(UUIDPrimaryKeyModel):
     """An image, drawing, RTI, 3D model, IIIF manifest or PDF plate of an artefact."""
 
     class Kind(models.TextChoices):
@@ -578,7 +594,7 @@ class Reading(TimeStampedModel):
 # ---------------------------------------------------------------------------
 # Provenance & bibliography links
 # ---------------------------------------------------------------------------
-class ProvenanceEvent(models.Model):
+class ProvenanceEvent(UUIDPrimaryKeyModel):
     """A station in the object's history: excavation, purchase, transfer, loan…"""
 
     class EventType(models.TextChoices):
@@ -611,7 +627,7 @@ class ProvenanceEvent(models.Model):
         return f"{self.get_event_type_display()} — {self.artefact}"
 
 
-class PublicationReference(models.Model):
+class PublicationReference(UUIDPrimaryKeyModel):
     """Through model linking an artefact to a publication, with the citation role."""
 
     class Role(models.TextChoices):
