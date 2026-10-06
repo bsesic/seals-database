@@ -141,6 +141,17 @@
               <tr><th scope="row" class="text-muted">{% trans "Dimensions" %}</th>
                 <td>{% for me in artefact.measurements.all %}{{ me.get_kind_display }} {{ me.value }} {{ me.unit }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</td></tr>
             {% endif %}
+            <tr><th scope="row" class="text-muted">{% trans "Stable URI" %}</th>
+              <td>
+                <a href="{{ artefact.get_identity_url }}"><code>{{ request.scheme }}://{{ request.get_host }}{{ artefact.get_identity_url }}</code></a>
+                <div class="small text-muted mt-1">
+                  {% trans "RDF" %}:
+                  <a href="{% url 'catalog:artefact-rdf' artefact.slug %}?format=turtle">Turtle</a> ·
+                  <a href="{% url 'catalog:artefact-rdf' artefact.slug %}?format=jsonld">JSON-LD</a> ·
+                  <a href="{% url 'catalog:artefact-rdf' artefact.slug %}?format=xml">RDF/XML</a> ·
+                  <a href="{% url 'catalog:artefact-rdf' artefact.slug %}?format=nt">N-Triples</a>
+                </div>
+              </td></tr>
           </tbody>
         </table>
       </div>

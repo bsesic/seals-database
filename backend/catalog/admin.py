@@ -91,7 +91,7 @@ class ArtefactAdmin(ModelAdmin, SimpleHistoryAdmin):
         "repository", "period", "origin_region",
     )
     filter_horizontal = ("materials", "iconographic_features")
-    readonly_fields = ("uuid", "slug", "created_at", "updated_at")
+    readonly_fields = ("short_id", "slug", "created_at", "updated_at")
     inlines = [
         IdentifierInline, MediaItemInline, InscriptionInline, MeasurementInline,
         MaterialAnalysisInline, ProvenanceEventInline, PublicationReferenceInline,
@@ -108,7 +108,8 @@ class ArtefactAdmin(ModelAdmin, SimpleHistoryAdmin):
         )}),
         ("Description", {"fields": ("description", "notes")}),
         ("System", {
-            "fields": ("uuid", "slug", "organization", "created_by", "created_at", "updated_at"),
+            "fields": ("short_id", "slug", "organization", "created_by",
+                       "created_at", "updated_at"),
             "classes": ("collapse",),
         }),
     )

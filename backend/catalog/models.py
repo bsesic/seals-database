@@ -17,8 +17,6 @@ Two tiers:
   box. For the solo survey everything lives in your personal organization.
 """
 
-import uuid
-
 from django.conf import settings
 from django.db import models
 from django.urls import reverse
@@ -29,6 +27,7 @@ from taggit.managers import TaggableManager
 
 from organizations.models import OrganizationOwnedModel
 
+from core.shortid import encode as shortid_encode
 from core.uuids import uuid7
 
 
@@ -313,11 +312,11 @@ class Artefact(OrganizationOwnedModel, TimeStampedModel):
     """A seal, sealing, cylinder seal, jar-handle impression or inscription.
 
     Almost every field is optional on purpose: the survey records whatever is
-    known and the rest is filled in later. ``uuid`` gives a stable, citable
-    permalink independent of the title or database id.
+    known and the rest is filled in later. The UUIDv7 primary key gives a
+    stable, citable identity (exposed as ``short_id``) independent of the title
+    or slug.
     """
 
-    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     slug = models.SlugField(max_length=255, unique=True, blank=True)
     title = models.CharField(max_length=255)
 
@@ -405,11 +404,20 @@ class Artefact(OrganizationOwnedModel, TimeStampedModel):
     def save(self, *args, **kwargs):
         if not self.slug:
             base = slugify(self.title) or "artefact"
-            self.slug = f"{base}-{self.uuid.hex[:8]}"
+            self.slug = f"{base}-{self.pk.hex[:8]}"
         super().save(*args, **kwargs)
+
+    @property
+    def short_id(self):
+        """Reversible Crockford-base32 encoding of the UUIDv7 primary key."""
+        return shortid_encode(self.pk)
 
     def get_absolute_url(self):
         return reverse("catalog:artefact-detail", kwargs={"slug": self.slug})
+
+    def get_identity_url(self):
+        """Stable, slug-independent identity path (backs the public IRI)."""
+        return reverse("object-identity", kwargs={"shortid": self.short_id})
 
     @property
     def primary_image(self):

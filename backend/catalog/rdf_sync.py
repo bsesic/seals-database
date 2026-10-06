@@ -128,7 +128,8 @@ def _inscription(cache, artefact_iri_str, ins, save=True):
 
 
 def artefact_iri(artefact):
-    return f"{_base()}{artefact.get_absolute_url()}"
+    # The canonical, stable resource IRI is the slug-independent identity URI.
+    return f"{_base()}{artefact.get_identity_url()}"
 
 
 def build_artefact(artefact, cache, save=True):
@@ -290,3 +291,17 @@ def negotiate_format(request):
         if spec[1] in accept:
             return spec
     return RDF_FORMATS["turtle"]
+
+
+def wants_rdf(request):
+    """True when the client asked for RDF (via ?format= or the Accept header).
+
+    Used by the identity resolver to decide whether to send a client to the
+    RDF representation or the human-readable HTML page.
+    """
+    if request.GET.get("format", "").lower() in RDF_FORMATS:
+        return True
+    accept = request.META.get("HTTP_ACCEPT", "")
+    if "text/html" in accept:
+        return False
+    return any(spec[1] in accept for spec in RDF_FORMATS.values())

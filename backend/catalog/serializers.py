@@ -167,11 +167,12 @@ class ArtefactListSerializer(serializers.HyperlinkedModelSerializer):
     region = serializers.CharField(source="region.label", default=None, read_only=True)
     period = serializers.CharField(source="period.label", default=None, read_only=True)
     thumbnail = serializers.SerializerMethodField()
+    short_id = serializers.CharField(read_only=True)
 
     class Meta:
         model = Artefact
         fields = (
-            "uuid", "slug", "url", "title", "category", "object_type",
+            "short_id", "slug", "url", "title", "category", "object_type",
             "region", "period", "dating_text", "is_inscribed", "has_iconography",
             "thumbnail", "updated_at",
         )
@@ -209,11 +210,12 @@ class ArtefactDetailSerializer(serializers.ModelSerializer):
     bibliography = PublicationRefSerializer(source="publication_refs", many=True, read_only=True)
     tags = serializers.SerializerMethodField()
     web_url = serializers.SerializerMethodField()
+    short_id = serializers.CharField(read_only=True)
 
     class Meta:
         model = Artefact
         fields = (
-            "uuid", "slug", "web_url", "title", "category", "object_type",
+            "short_id", "slug", "web_url", "title", "category", "object_type",
             "region", "findspot", "period", "dating_text", "ruler",
             "origin_region", "origin_note", "repository", "condition",
             "preservation_note", "is_inscribed", "has_iconography",
@@ -246,18 +248,19 @@ class ArtefactWriteSerializer(serializers.ModelSerializer):
         child=serializers.CharField(), required=False, write_only=True,
         help_text="List of tag names.",
     )
+    short_id = serializers.CharField(read_only=True)
 
     class Meta:
         model = Artefact
         fields = (
-            "uuid", "slug", "title", "category", "object_type", "findspot",
+            "short_id", "slug", "title", "category", "object_type", "findspot",
             "find_context", "region", "repository", "period", "dating_text",
             "ruler", "origin_region", "origin_note", "is_inscribed",
             "has_iconography", "is_published", "condition", "preservation_note",
             "materials", "iconographic_features", "description", "notes",
             "tags", "created_at", "updated_at",
         )
-        read_only_fields = ("uuid", "slug", "created_at", "updated_at")
+        read_only_fields = ("short_id", "slug", "created_at", "updated_at")
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
