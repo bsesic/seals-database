@@ -10,6 +10,7 @@ from drf_spectacular.views import (
     SpectacularSwaggerView,
 )
 
+from catalog.views import ObjectIdentityView
 from core import health
 from core.sitemaps import StaticViewSitemap
 
@@ -35,6 +36,8 @@ urlpatterns = [
     path("billing/", include("billing.urls")),
     path("documents/", include("documents.urls")),
     path("catalog/", include("catalog.urls")),
+    # Stable, dereferenceable object IRIs (303 content negotiation).
+    path("id/object/<str:shortid>/", ObjectIdentityView.as_view(), name="object-identity"),
     path("notifications/", include("notifications.urls")),
     path("newsletter/", include("newsletter.urls")),
     # REST API v1 + OpenAPI schema/docs.

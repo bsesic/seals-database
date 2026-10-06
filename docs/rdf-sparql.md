@@ -32,7 +32,11 @@ Configured via `DJANGORDF_BACKEND` (see `core/settings.py`):
   sync to Apache Jena Fuseki over SPARQL 1.1. Fuseki then serves the public
   SPARQL endpoint. Optional `FUSEKI_USER` / `FUSEKI_PASSWORD`.
 
-`RDF_BASE_URI` is the base for minted IRIs (an artefact's IRI is its web URL).
+`RDF_BASE_URI` is the base for minted IRIs. An artefact's canonical IRI is its
+stable identity URI `<base>/id/object/<shortid>`, where `<shortid>` is a
+reversible Crockford-base32 encoding of the UUIDv7 primary key — so the IRI
+resolves back to the object without a lookup table, and never changes when the
+title or slug does.
 
 ## Syncing
 
@@ -49,7 +53,11 @@ duplicates. Run it after data entry (or on a schedule / from `deploy.sh`).
 
 Django serves RDF directly, so artefact IRIs are dereferenceable:
 
-- `GET /catalog/<slug>/rdf/` — one artefact
+- `GET /id/object/<shortid>` — the canonical object IRI. It identifies the
+  object itself and **303 See Other**-redirects to a representation chosen by
+  content negotiation: the RDF endpoint for RDF clients, otherwise the HTML
+  detail page (the httpRange-14 pattern).
+- `GET /catalog/<slug>/rdf/` — RDF for one artefact
 - `GET /catalog/rdf/` — the whole published catalogue
 
 Pick a format with `?format=turtle|jsonld|xml|nt` or the `Accept` header

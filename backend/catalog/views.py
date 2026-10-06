@@ -7,7 +7,7 @@ the admin. Drafts (``is_published=False``) are hidden from the public list/detai
 
 from django.db import transaction
 from django.db.models import Count, F, Q
-from django.http import HttpResponse
+from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django.utils.translation import gettext as _
@@ -24,6 +24,7 @@ from catalog import rdf_sync
 from catalog.forms import ArtefactForm, MediaItemFormSet
 from catalog.models import Artefact, Findspot, ObjectCategory
 from catalog.search import search_artefacts
+from core.shortid import decode as shortid_decode
 from organizations.mixins import (
     CurrentOrganizationRequiredMixin,
     OrgScopedQuerysetMixin,
@@ -319,6 +320,38 @@ class DatasetRDFView(View):
         rdf_format, content_type = rdf_sync.negotiate_format(request)
         graph = rdf_sync.graph_for_dataset()
         return HttpResponse(graph.serialize(format=rdf_format), content_type=content_type)
+
+
+class ObjectIdentityView(View):
+    """Resolve a stable object IRI (``/id/object/<shortid>``).
+
+    This URI identifies the object itself; it does not return a document.
+    Following the httpRange-14 / 303 pattern it redirects (303 See Other) to a
+    representation chosen by content negotiation: the RDF endpoint for RDF
+    clients, otherwise the human-readable HTML detail page. The short id is a
+    reversible encoding of the UUIDv7 primary key, so no lookup table is needed.
+    """
+
+    def get(self, request, shortid):
+        try:
+            pk = shortid_decode(shortid)
+        except ValueError:
+            raise Http404("Malformed object id")
+        artefact = get_object_or_404(
+            Artefact.objects.filter(is_published=True), pk=pk
+        )
+        if rdf_sync.wants_rdf(request):
+            target = reverse(
+                "catalog:artefact-rdf", kwargs={"slug": artefact.slug}
+            )
+            fmt = request.GET.get("format")
+            if fmt:
+                target = f"{target}?format={fmt}"
+        else:
+            target = artefact.get_absolute_url()
+        response = redirect(target)
+        response.status_code = 303  # See Other
+        return response
 
 
 class MyArtefactListView(CurrentOrganizationRequiredMixin, ListView):
