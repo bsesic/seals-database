@@ -3,7 +3,6 @@ Allow: /
 Disallow: /admin/
 Disallow: /accounts/
 Disallow: /profile/
-Disallow: /billing/
 Disallow: /organizations/
 
 Sitemap: {{ request.scheme }}://{{ request.get_host }}/sitemap.xml
