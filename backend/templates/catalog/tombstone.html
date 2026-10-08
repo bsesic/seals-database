@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Record removed" %}{% endblock %}
+{% block meta_description %}{% trans "This catalogue record has been removed." %}{% endblock %}
+
+{% block content %}
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+      <div class="alert alert-secondary" role="alert">
+        <h1 class="h4">{% trans "This record has been removed" %}</h1>
+        <p class="mb-2">
+          {% blocktrans %}The object that was published at this address is no longer part of the catalogue. Its identifier is kept so that links and citations resolve to this notice rather than disappearing.{% endblocktrans %}
+        </p>
+        <dl class="row mb-0 small">
+          {% if retired.former_title %}
+            <dt class="col-sm-3">{% trans "Former title" %}</dt>
+            <dd class="col-sm-9">{{ retired.former_title }}</dd>
+          {% endif %}
+          <dt class="col-sm-3">{% trans "Removed on" %}</dt>
+          <dd class="col-sm-9">{{ retired.retired_at|date:"Y-m-d" }}</dd>
+          {% if retired.reason %}
+            <dt class="col-sm-3">{% trans "Reason" %}</dt>
+            <dd class="col-sm-9">{{ retired.reason }}</dd>
+          {% endif %}
+        </dl>
+      </div>
+      <a class="btn btn-outline-secondary" href="{% url 'catalog:artefact-list' %}">{% trans "Back to the catalogue" %}</a>
+    </div>
+  </div>
+{% endblock %}

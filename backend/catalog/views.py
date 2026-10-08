@@ -8,7 +8,7 @@ the admin. Drafts (``is_published=False``) are hidden from the public list/detai
 from django.db import transaction
 from django.db.models import Count, F, Q
 from django.http import Http404, HttpResponse
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.translation import gettext as _
 from django.views import View
@@ -22,7 +22,12 @@ from django.views.generic import (
 
 from catalog import rdf_sync
 from catalog.forms import ArtefactForm, MediaItemFormSet
-from catalog.models import Artefact, Findspot, ObjectCategory
+from catalog.models import (
+    Artefact,
+    Findspot,
+    ObjectCategory,
+    RetiredIdentifier,
+)
 from catalog.search import search_artefacts
 from core.shortid import decode as shortid_decode
 from organizations.mixins import (
@@ -337,9 +342,34 @@ class ObjectIdentityView(View):
             pk = shortid_decode(shortid)
         except ValueError:
             raise Http404("Malformed object id")
-        artefact = get_object_or_404(
-            Artefact.objects.filter(is_published=True), pk=pk
+
+        artefact = Artefact.objects.filter(is_published=True, pk=pk).first()
+        if artefact is not None:
+            return self._represent(request, artefact)
+
+        # No live object: a merged IRI redirects to its successor, a deleted
+        # one returns a 410 tombstone; anything else is genuinely unknown.
+        retired = RetiredIdentifier.objects.filter(object_id=pk).first()
+        if retired is None:
+            raise Http404("Unknown object id")
+        if retired.status == RetiredIdentifier.MERGED and retired.replaced_by_id:
+            target = reverse(
+                "object-identity",
+                kwargs={"shortid": retired.replaced_by.short_id},
+            )
+            fmt = request.GET.get("format")
+            if fmt:
+                target = f"{target}?format={fmt}"
+            response = redirect(target)
+            response.status_code = 301  # Moved Permanently
+            return response
+        return render(
+            request, "catalog/tombstone.html", {"retired": retired}, status=410
         )
+
+    @staticmethod
+    def _represent(request, artefact):
+        """303 See Other to the negotiated representation of a live object."""
         if rdf_sync.wants_rdf(request):
             target = reverse(
                 "catalog:artefact-rdf", kwargs={"slug": artefact.slug}

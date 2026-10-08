@@ -18,12 +18,13 @@ Two tiers:
 """
 
 from django.conf import settings
-from django.db import models
+from django.db import models, transaction
 from django.urls import reverse
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from simple_history.models import HistoricalRecords
 from taggit.managers import TaggableManager
+from taggit.models import GenericUUIDTaggedItemBase, TaggedItemBase
 
 from organizations.models import OrganizationOwnedModel
 
@@ -63,6 +64,19 @@ class TimeStampedModel(UUIDPrimaryKeyModel):
 
     class Meta:
         abstract = True
+
+
+class UUIDTaggedItem(GenericUUIDTaggedItemBase, TaggedItemBase):
+    """Taggit through model with a UUID ``object_id``.
+
+    Taggit's default tagged-item stores ``object_id`` as an integer, which
+    cannot hold a UUIDv7 primary key. This variant keys tags by UUID so
+    tagging (and deletion) of catalogue records works.
+    """
+
+    class Meta:
+        verbose_name = _("tag")
+        verbose_name_plural = _("tags")
 
 
 class ControlledTerm(TimeStampedModel):
@@ -388,7 +402,7 @@ class Artefact(OrganizationOwnedModel, TimeStampedModel):
     description = models.TextField(blank=True)
     notes = models.TextField(blank=True)
 
-    tags = TaggableManager(blank=True)
+    tags = TaggableManager(blank=True, through=UUIDTaggedItem)
     history = HistoricalRecords()
 
     class Meta:
@@ -418,6 +432,28 @@ class Artefact(OrganizationOwnedModel, TimeStampedModel):
     def get_identity_url(self):
         """Stable, slug-independent identity path (backs the public IRI)."""
         return reverse("object-identity", kwargs={"shortid": self.short_id})
+
+    def retire_as_merged(self, into, reason="", by=None):
+        """Merge this artefact into ``into`` and delete the redundant row.
+
+        Records a tombstone so this artefact's IRI permanently redirects (301)
+        to the surviving object, keeping the retired IRI stable. Moving child
+        records to the successor is left to the caller / future merge tooling.
+        """
+        if into.pk == self.pk:
+            raise ValueError("cannot merge an artefact into itself")
+        with transaction.atomic():
+            RetiredIdentifier.objects.update_or_create(
+                object_id=self.pk,
+                defaults={
+                    "status": RetiredIdentifier.MERGED,
+                    "replaced_by": into,
+                    "reason": reason,
+                    "former_title": self.title,
+                    "retired_by": by,
+                },
+            )
+            self.delete()
 
     @property
     def primary_image(self):
@@ -661,3 +697,54 @@ class PublicationReference(UUIDPrimaryKeyModel):
 
     def __str__(self):
         return f"{self.publication} ({self.get_role_display()})"
+
+
+# ---------------------------------------------------------------------------
+# Identity persistence (Linked Open Data: stable IRIs over time)
+# ---------------------------------------------------------------------------
+class RetiredIdentifier(UUIDPrimaryKeyModel):
+    """Tombstone / redirect record for an object IRI with no live artefact.
+
+    Keeps the catalogue's IRIs stable over time. A *merged* object's IRI
+    permanently redirects (HTTP 301) to the surviving object; a *deleted*
+    object's IRI returns HTTP 410 Gone with provenance instead of a bare 404.
+    Keyed by the retired object's former UUIDv7 primary key, so the identity
+    resolver can find it after the artefact row is gone.
+    """
+
+    MERGED = "merged"
+    DELETED = "deleted"
+    STATUS_CHOICES = [(MERGED, "Merged"), (DELETED, "Deleted")]
+
+    object_id = models.UUIDField(unique=True, db_index=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES)
+    replaced_by = models.ForeignKey(
+        "Artefact",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="superseded_identifiers",
+    )
+    reason = models.TextField(blank=True)
+    former_title = models.CharField(max_length=255, blank=True)
+    retired_at = models.DateTimeField(auto_now_add=True)
+    retired_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+    )
+
+    class Meta:
+        ordering = ["-retired_at"]
+
+    def __str__(self):
+        return f"{self.object_id} ({self.status})"
+
+    @property
+    def http_status(self):
+        """301 when it redirects to a surviving object, else 410 (gone)."""
+        if self.status == self.MERGED and self.replaced_by_id:
+            return 301
+        return 410

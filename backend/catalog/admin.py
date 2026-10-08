@@ -18,6 +18,7 @@ from catalog.models import (
     MaterialAnalysis,
     Measurement,
     MediaItem,
+    RetiredIdentifier,
     ObjectType,
     Period,
     PeriodScheme,
@@ -258,3 +259,12 @@ class PublicationAdmin(ModelAdmin):
             "opts": self.model._meta,
         }
         return render(request, "admin/catalog/import_bibtex.html", context)
+
+
+@admin.register(RetiredIdentifier)
+class RetiredIdentifierAdmin(ModelAdmin):
+    list_display = ("object_id", "status", "former_title", "replaced_by", "retired_at")
+    list_filter = ("status",)
+    search_fields = ("object_id", "former_title", "reason")
+    readonly_fields = ("object_id", "retired_at", "http_status")
+    autocomplete_fields = ("replaced_by",)

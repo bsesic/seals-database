@@ -7,15 +7,32 @@ class CatalogConfig(AppConfig):
     verbose_name = "Seal Catalog"
 
     def ready(self):
+        from django.db.models.signals import post_delete, post_save
+
+        Artefact = self.get_model("Artefact")
+        RetiredIdentifier = self.get_model("RetiredIdentifier")
+
+        def record_tombstone(sender, instance, **kwargs):
+            # A deleted artefact leaves a tombstone so its IRI returns 410
+            # rather than 404. A prior merge record (301) is left untouched.
+            RetiredIdentifier.objects.get_or_create(
+                object_id=instance.pk,
+                defaults={
+                    "status": RetiredIdentifier.DELETED,
+                    "former_title": getattr(instance, "title", ""),
+                },
+            )
+
+        post_delete.connect(
+            record_tombstone, sender=Artefact, dispatch_uid="catalog.tombstone"
+        )
+
         # Keep the Elasticsearch index in sync — only when that backend is on.
         from catalog import search
 
         if not search.elasticsearch_enabled():
             return
 
-        from django.db.models.signals import post_delete, post_save
-
-        Artefact = self.get_model("Artefact")
         Identifier = self.get_model("Identifier")
         Inscription = self.get_model("Inscription")
         Reading = self.get_model("Reading")
