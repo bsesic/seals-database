@@ -69,12 +69,10 @@ INSTALLED_APPS = [
     "organizations",
     "pages",
     "catalog",
-    "billing",
     "documents",
     "notifications",
     "compliance",
     "api",
-    "newsletter",
 ]
 
 MIDDLEWARE = [
@@ -284,30 +282,6 @@ DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="noreply@example.com")
 # (and ideally a separate backend/API key) to protect deliverability.
 TRANSACTIONAL_FROM_EMAIL = env("TRANSACTIONAL_FROM_EMAIL", default="") or DEFAULT_FROM_EMAIL
 MARKETING_FROM_EMAIL = env("MARKETING_FROM_EMAIL", default="") or DEFAULT_FROM_EMAIL
-
-# --- Billing (Stripe) ------------------------------------------------------
-# Billing is optional: the UI degrades gracefully when no secret key is set.
-STRIPE_PUBLIC_KEY = env("STRIPE_PUBLIC_KEY", default="")
-STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY", default="")
-STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET", default="")
-STRIPE_TAX_ENABLED = env.bool("STRIPE_TAX_ENABLED", default=False)
-BILLING_ENABLED = bool(STRIPE_SECRET_KEY)
-
-# Subscription plans. Price ids come from your Stripe dashboard (recurring prices).
-STRIPE_PLANS = [
-    {
-        "key": "starter",
-        "name": "Starter",
-        "description": _("For individuals getting started."),
-        "price_id": env("STRIPE_PRICE_STARTER", default=""),
-    },
-    {
-        "key": "pro",
-        "name": "Pro",
-        "description": _("For growing teams."),
-        "price_id": env("STRIPE_PRICE_PRO", default=""),
-    },
-]
 
 # --- CORS ------------------------------------------------------------------
 CORS_ALLOWED_ORIGINS = env.list(

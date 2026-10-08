@@ -33,13 +33,11 @@ urlpatterns = [
     path("profile/", include("users.urls_web")),
     path("account/", include("compliance.urls")),
     path("organizations/", include("organizations.urls")),
-    path("billing/", include("billing.urls")),
     path("documents/", include("documents.urls")),
     path("catalog/", include("catalog.urls")),
     # Stable, dereferenceable object IRIs (303 content negotiation).
     path("id/object/<str:shortid>/", ObjectIdentityView.as_view(), name="object-identity"),
     path("notifications/", include("notifications.urls")),
-    path("newsletter/", include("newsletter.urls")),
     # REST API v1 + OpenAPI schema/docs.
     path("api/v1/", include(("api.urls", "api"), namespace="v1")),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),

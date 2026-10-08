@@ -15,7 +15,6 @@ class StaticViewSitemap(Sitemap):
             "pages:imprint",
             "pages:privacy",
             "pages:terms",
-            "billing:pricing",
         ]
 
     def location(self, item):

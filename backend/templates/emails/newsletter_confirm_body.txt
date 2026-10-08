@@ -1,8 +1,0 @@
-Hi,
-
-Please confirm your newsletter subscription by visiting:
-{{ confirm_url }}
-
-If you did not request this, you can ignore this email.
-
-The Seals Database team
