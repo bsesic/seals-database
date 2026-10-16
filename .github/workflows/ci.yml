@@ -10,24 +10,74 @@ on:
       - 'docs/**'
   pull_request:
     branches: [main, development]
-    # No paths-ignore here on purpose: the "Lint and test" job is a required
-    # status check, so it must run (and report) on every PR. Skipping it for
-    # docs-only changes would leave the required check pending forever and
-    # block the PR. Direct pushes keep the paths-ignore filter above.
+    # No paths-ignore here on purpose. "Lint and test" is a required status
+    # check, so it must report on every PR or the PR blocks forever. Instead of
+    # skipping the workflow for docs-only PRs (which would leave the required
+    # check pending), the "changes" job below decides whether the heavy test
+    # job runs, and the "Lint and test" gate job always reports. Direct pushes
+    # keep the paths-ignore filter above.
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-defaults:
-  run:
-    working-directory: backend
-
 jobs:
-  lint-and-test:
-    name: Lint and test
+  # Decide whether anything other than docs/config changed. Docs-only PRs skip
+  # the expensive test job but still get a green required check via the gate.
+  changes:
+    name: Detect code changes
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine changed files
+        id: filter
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            base="${{ github.event.pull_request.base.sha }}"
+            head="${{ github.event.pull_request.head.sha }}"
+          else
+            base="${{ github.event.before }}"
+            head="${{ github.sha }}"
+          fi
+
+          # New branch / unknown base: no reliable diff, so run the full suite.
+          if [ -z "$base" ] || ! git cat-file -e "$base^{commit}" 2>/dev/null; then
+            echo "No usable base ($base); running full suite."
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          files=$(git diff --name-only "$base" "$head")
+          echo "Changed files:"
+          echo "$files"
+
+          code=false
+          while IFS= read -r f; do
+            [ -z "$f" ] && continue
+            case "$f" in
+              *.md|docs/*|.gitignore|LICENSE*) ;;  # ignored
+              *) code=true ;;
+            esac
+          done <<< "$files"
+
+          echo "code=$code"
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+
+  test:
+    name: Run tests
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
+
+    defaults:
+      run:
+        working-directory: backend
 
     services:
       postgres:
@@ -87,3 +137,27 @@ jobs:
 
       - name: pytest
         run: pytest
+
+  # Required status check. Always runs and reports, so docs-only PRs (where the
+  # test job is skipped) still go green instead of hanging on a pending check.
+  lint-and-test:
+    name: Lint and test
+    needs: [changes, test]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Gate on test result
+        run: |
+          changes_result="${{ needs.changes.result }}"
+          test_result="${{ needs.test.result }}"
+          echo "changes: $changes_result, test: $test_result"
+
+          if [ "$changes_result" != "success" ]; then
+            echo "The change-detection job did not succeed."
+            exit 1
+          fi
+
+          case "$test_result" in
+            success|skipped) echo "OK"; exit 0 ;;
+            *) echo "Test job reported: $test_result"; exit 1 ;;
+          esac
