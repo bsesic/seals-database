@@ -151,8 +151,10 @@ class ReadingAdmin(ModelAdmin, SimpleHistoryAdmin):
 # ---- Controlled vocabularies ----------------------------------------------
 @admin.register(ObjectType, Material, ScriptType, Language)
 class ControlledTermAdmin(ModelAdmin):
-    list_display = ("label", "skos_uri")
+    list_display = ("label", "broader", "skos_uri")
+    list_filter = ("broader",)
     search_fields = ("label", "description")
+    autocomplete_fields = ("broader",)
 
 
 @admin.register(IconographicMotif)
