@@ -29,11 +29,14 @@ from catalog.models import (
 
 # ---- Controlled vocabularies ----------------------------------------------
 class TermSerializer(serializers.ModelSerializer):
-    """Flat vocabulary term (ObjectType, Material, ScriptType)."""
+    """Hierarchical vocabulary term (ObjectType, Material, ScriptType, Language).
+
+    ``broader`` exposes the SKOS broader/narrower parent link.
+    """
 
     class Meta:
         model = ObjectType  # overridden per viewset via `Meta.model`
-        fields = ("id", "label", "description", "skos_uri")
+        fields = ("id", "label", "description", "broader", "skos_uri")
 
 
 class MaterialSerializer(TermSerializer):

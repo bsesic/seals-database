@@ -96,30 +96,13 @@ class ControlledTerm(TimeStampedModel):
         return self.label
 
 
-# ---------------------------------------------------------------------------
-# Controlled vocabularies
-# ---------------------------------------------------------------------------
-class ObjectType(ControlledTerm):
-    """Fine-grained typology, e.g. 'Scaraboid', 'Conoid stamp seal', 'Jehud stamp impression'."""
+class HierarchicalTerm(ControlledTerm):
+    """A :class:`ControlledTerm` with a SKOS ``broader``/``narrower`` hierarchy.
 
-
-class Material(ControlledTerm):
-    """e.g. 'Limestone', 'Steatite', 'Carnelian', 'Clay (bulla)'."""
-
-
-class ScriptType(ControlledTerm):
-    """e.g. 'Palaeo-Hebrew', 'Neo-Palaeo-Hebrew', 'Imperial Aramaic', 'Phoenician'."""
-
-
-class Language(ControlledTerm):
-    """e.g. 'Hebrew', 'Aramaic', 'Ammonite', 'Moabite', 'Edomite'."""
-
-
-class IconographicMotif(ControlledTerm):
-    """An iconographic feature/motif (winged scarab, lion, rosette, ankh, …).
-
-    ``broader`` enables a simple SKOS broader/narrower hierarchy so motifs can be
-    grouped (e.g. 'four-winged scarab' broader 'scarab').
+    ``broader`` is a self-referential link to the parent concept, so the
+    typological trees described in ``docs/ontology-from-literature.md`` can be
+    expressed (e.g. 'four-winged scarab' broader 'scarab', 'Steatite' broader
+    'Stone').
     """
 
     broader = models.ForeignKey(
@@ -129,6 +112,48 @@ class IconographicMotif(ControlledTerm):
         on_delete=models.SET_NULL,
         related_name="narrower",
     )
+
+    class Meta(ControlledTerm.Meta):
+        abstract = True
+
+
+# ---------------------------------------------------------------------------
+# Controlled vocabularies
+# ---------------------------------------------------------------------------
+class ObjectType(HierarchicalTerm):
+    """Fine-grained typology, e.g. 'Scaraboid', 'Conoid stamp seal', 'Jehud stamp impression'.
+
+    Hierarchical via ``broader`` (e.g. 'Scaraboid' broader 'Stamp seal').
+    """
+
+
+class Material(HierarchicalTerm):
+    """e.g. 'Limestone', 'Steatite', 'Carnelian', 'Clay (bulla)'.
+
+    Hierarchical via ``broader`` (e.g. 'Steatite' broader 'Stone').
+    """
+
+
+class ScriptType(HierarchicalTerm):
+    """e.g. 'Palaeo-Hebrew', 'Neo-Palaeo-Hebrew', 'Imperial Aramaic', 'Phoenician'.
+
+    Hierarchical via ``broader`` (e.g. 'Neo-Palaeo-Hebrew' broader 'Palaeo-Hebrew').
+    """
+
+
+class Language(HierarchicalTerm):
+    """e.g. 'Hebrew', 'Aramaic', 'Ammonite', 'Moabite', 'Edomite'.
+
+    Hierarchical via ``broader`` for language groupings where useful.
+    """
+
+
+class IconographicMotif(HierarchicalTerm):
+    """An iconographic feature/motif (winged scarab, lion, rosette, ankh, …).
+
+    ``broader`` enables a simple SKOS broader/narrower hierarchy so motifs can be
+    grouped (e.g. 'four-winged scarab' broader 'scarab').
+    """
 
 
 class Region(ControlledTerm):
