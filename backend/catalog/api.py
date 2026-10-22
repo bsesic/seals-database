@@ -18,24 +18,38 @@ from rest_framework.permissions import (
 
 from catalog.models import (
     Artefact,
+    BaseLayout,
+    BorderType,
+    Colour,
+    EngravingTechnique,
     Findspot,
     Material,
+    MountingDevice,
     ObjectType,
     Period,
     Region,
     ScriptType,
+    SealMorphology,
+    SurfaceTreatment,
 )
 from catalog.search import search_artefacts
 from catalog.serializers import (
     ArtefactDetailSerializer,
     ArtefactListSerializer,
     ArtefactWriteSerializer,
+    BaseLayoutSerializer,
+    BorderTypeSerializer,
+    ColourSerializer,
+    EngravingTechniqueSerializer,
     FindspotSerializer,
     MaterialSerializer,
+    MountingDeviceSerializer,
     ObjectTypeSerializer,
     PeriodSerializer,
     RegionSerializer,
     ScriptTypeSerializer,
+    SealMorphologySerializer,
+    SurfaceTreatmentSerializer,
 )
 
 
@@ -177,3 +191,38 @@ class MaterialViewSet(PublicReadOnlyViewSet):
 class ScriptTypeViewSet(PublicReadOnlyViewSet):
     queryset = ScriptType.objects.all()
     serializer_class = ScriptTypeSerializer
+
+
+class SealMorphologyViewSet(PublicReadOnlyViewSet):
+    queryset = SealMorphology.objects.all()
+    serializer_class = SealMorphologySerializer
+
+
+class EngravingTechniqueViewSet(PublicReadOnlyViewSet):
+    queryset = EngravingTechnique.objects.all()
+    serializer_class = EngravingTechniqueSerializer
+
+
+class MountingDeviceViewSet(PublicReadOnlyViewSet):
+    queryset = MountingDevice.objects.all()
+    serializer_class = MountingDeviceSerializer
+
+
+class BorderTypeViewSet(PublicReadOnlyViewSet):
+    queryset = BorderType.objects.all()
+    serializer_class = BorderTypeSerializer
+
+
+class BaseLayoutViewSet(PublicReadOnlyViewSet):
+    queryset = BaseLayout.objects.all()
+    serializer_class = BaseLayoutSerializer
+
+
+class SurfaceTreatmentViewSet(PublicReadOnlyViewSet):
+    queryset = SurfaceTreatment.objects.all()
+    serializer_class = SurfaceTreatmentSerializer
+
+
+class ColourViewSet(PublicReadOnlyViewSet):
+    queryset = Colour.objects.all()
+    serializer_class = ColourSerializer

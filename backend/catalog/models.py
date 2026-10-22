@@ -156,6 +156,49 @@ class IconographicMotif(HierarchicalTerm):
     """
 
 
+class SealMorphology(HierarchicalTerm):
+    """Scarab/scaraboid morphology after Tufnell 1984: 31-38 (head/back/side).
+
+    The single most chronologically diagnostic feature when the carved views
+    survive. Modelled hierarchically: top-level 'Head type' / 'Back type' /
+    'Side type' concepts with the individual Tufnell codes (e.g. 'A1', 'D4',
+    'vIIv') as ``narrower`` terms. See docs/ontology-from-literature.md §1.2.
+    """
+
+    class Meta(HierarchicalTerm.Meta):
+        verbose_name = _("seal morphology")
+        verbose_name_plural = _("seal morphologies")
+
+
+class EngravingTechnique(ControlledTerm):
+    """How the design was cut: hollowed-out, linear, hatched, cross-hatched,
+    drilled. SSSL §2.2; Keel-2012 §328-334. See docs §1.4."""
+
+
+class MountingDevice(ControlledTerm):
+    """How the seal was mounted/worn: perforated, metal ring-mount, gold-leaf
+    mount, unmounted. SSSL §2.2. See docs §1.4."""
+
+
+class BorderType(ControlledTerm):
+    """Borderline / frame of the design field: none, oval line, barred /
+    strand-rope border. Keel 1995a §190f. See docs §1.4."""
+
+
+class BaseLayout(ControlledTerm):
+    """Arrangement of the design field: horizontal, vertical, register
+    division. See docs §1.4."""
+
+
+class SurfaceTreatment(ControlledTerm):
+    """Surface treatment / glaze, e.g. 'baked steatite with red-brown glaze',
+    'traces of glazing'. SSSL-IR App.1; Keel-2012. See docs §1.3."""
+
+
+class Colour(ControlledTerm):
+    """Standardised colour of the object. SSSL-IR §2.2. See docs §1.3."""
+
+
 class Region(ControlledTerm):
     """Historical / geographical region. Hierarchical via ``parent``.
 

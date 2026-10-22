@@ -10,6 +10,10 @@ from rest_framework import serializers
 
 from catalog.models import (
     Artefact,
+    BaseLayout,
+    BorderType,
+    Colour,
+    EngravingTechnique,
     Findspot,
     IconographicMotif,
     Identifier,
@@ -17,6 +21,7 @@ from catalog.models import (
     Material,
     Measurement,
     MediaItem,
+    MountingDevice,
     ObjectType,
     Period,
     ProvenanceEvent,
@@ -24,6 +29,8 @@ from catalog.models import (
     Reading,
     Region,
     ScriptType,
+    SealMorphology,
+    SurfaceTreatment,
 )
 
 
@@ -52,6 +59,49 @@ class ScriptTypeSerializer(TermSerializer):
 class ObjectTypeSerializer(TermSerializer):
     class Meta(TermSerializer.Meta):
         model = ObjectType
+
+
+class SealMorphologySerializer(TermSerializer):
+    class Meta(TermSerializer.Meta):
+        model = SealMorphology
+
+
+class FlatTermSerializer(serializers.ModelSerializer):
+    """Non-hierarchical vocabulary term (no ``broader``)."""
+
+    class Meta:
+        model = EngravingTechnique  # overridden per viewset via `Meta.model`
+        fields = ("id", "label", "description", "skos_uri")
+
+
+class EngravingTechniqueSerializer(FlatTermSerializer):
+    class Meta(FlatTermSerializer.Meta):
+        model = EngravingTechnique
+
+
+class MountingDeviceSerializer(FlatTermSerializer):
+    class Meta(FlatTermSerializer.Meta):
+        model = MountingDevice
+
+
+class BorderTypeSerializer(FlatTermSerializer):
+    class Meta(FlatTermSerializer.Meta):
+        model = BorderType
+
+
+class BaseLayoutSerializer(FlatTermSerializer):
+    class Meta(FlatTermSerializer.Meta):
+        model = BaseLayout
+
+
+class SurfaceTreatmentSerializer(FlatTermSerializer):
+    class Meta(FlatTermSerializer.Meta):
+        model = SurfaceTreatment
+
+
+class ColourSerializer(FlatTermSerializer):
+    class Meta(FlatTermSerializer.Meta):
+        model = Colour
 
 
 class MotifSerializer(serializers.ModelSerializer):
