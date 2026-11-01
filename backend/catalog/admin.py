@@ -8,6 +8,10 @@ from catalog.bibtex import apply_entry, import_bibtex, parse_bibtex
 
 from catalog.models import (
     Artefact,
+    BaseLayout,
+    BorderType,
+    Colour,
+    EngravingTechnique,
     Excavation,
     Findspot,
     IconographicMotif,
@@ -18,6 +22,7 @@ from catalog.models import (
     MaterialAnalysis,
     Measurement,
     MediaItem,
+    MountingDevice,
     RetiredIdentifier,
     ObjectType,
     Period,
@@ -29,6 +34,8 @@ from catalog.models import (
     Region,
     Repository,
     ScriptType,
+    SealMorphology,
+    SurfaceTreatment,
     StratigraphicContext,
 )
 
@@ -157,7 +164,16 @@ class ControlledTermAdmin(ModelAdmin):
     autocomplete_fields = ("broader",)
 
 
-@admin.register(IconographicMotif)
+@admin.register(
+    EngravingTechnique, MountingDevice, BorderType,
+    BaseLayout, SurfaceTreatment, Colour,
+)
+class FlatControlledTermAdmin(ModelAdmin):
+    list_display = ("label", "skos_uri")
+    search_fields = ("label", "description")
+
+
+@admin.register(IconographicMotif, SealMorphology)
 class IconographicMotifAdmin(ModelAdmin):
     list_display = ("label", "broader", "skos_uri")
     list_filter = ("broader",)
